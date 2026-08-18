@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07150c">
+  <title>Team Duck — Sound Engineer Management</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="toast"></div>
+
+<main id="login" class="screen login">
+  <section class="login-card">
+    <div class="duck">🐤</div>
+    <h1>Team Duck</h1>
+    <p class="subtitle">Sound Engineer Management</p>
+    <form id="loginForm">
+      <label>E-mail<input id="email" type="email" autocomplete="email" required></label>
+      <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Entrar</button>
+      <p id="loginError" class="error"></p>
+    </form>
+  </section>
+</main>
+
+<main id="app" class="screen hidden">
+  <header>
+    <div><span class="brand-duck">🐤</span><strong>Team Duck</strong></div>
+    <button id="logout" class="ghost">Sair</button>
+  </header>
+
+  <nav id="nav">
+    <button data-page="dashboard" class="active">Resumo</button>
+    <button data-page="agenda">Agenda</button>
+    <button data-page="artists">Artistas</button>
+    <button data-page="team">Equipa</button>
+  </nav>
+
+  <section id="dashboard" class="page">
+    <h2>Resumo</h2>
+    <div class="stats">
+      <article><small>Próximos trabalhos</small><b id="statConcerts">—</b></article>
+      <article><small>Artistas</small><b id="statArtists">—</b></article>
+      <article><small>Por receber</small><b id="statDue">—</b></article>
+    </div>
+    <h3>Próximos concertos</h3>
+    <div id="nextConcerts" class="list"></div>
+  </section>
+
+  <section id="agenda" class="page hidden">
+    <div class="title-row"><h2>Agenda</h2><button id="newConcert">+ Trabalho</button></div>
+    <div id="concerts" class="list"></div>
+  </section>
+
+  <section id="artists" class="page hidden">
+    <div class="title-row"><h2>Artistas</h2><button id="newArtist">+ Artista</button></div>
+    <div id="artistList" class="list"></div>
+  </section>
+
+  <section id="team" class="page hidden">
+    <h2>Equipa</h2>
+    <div id="teamList" class="list"></div>
+  </section>
+</main>
+
+<dialog id="artistDialog">
+  <form id="artistForm">
+    <h3>Novo artista</h3>
+    <label>Nome<input id="artistName" required></label>
+    <label>Cachet base (€)<input id="artistFee" type="number" step="0.01"></label>
+    <label>Telefone<input id="artistPhone" type="tel"></label>
+    <label>E-mail<input id="artistEmail" type="email"></label>
+    <div class="actions"><button type="button" data-close>Cancelar</button><button type="submit">Guardar</button></div>
+  </form>
+</dialog>
+
+<dialog id="concertDialog">
+  <form id="concertForm">
+    <h3>Novo trabalho</h3>
+    <label>Artista<select id="concertArtist" required></select></label>
+    <label>Início<input id="concertStart" type="datetime-local" required></label>
+    <label>Fim<input id="concertEnd" type="datetime-local"></label>
+    <label>Local<input id="concertVenue"></label>
+    <label>Cidade<input id="concertCity"></label>
+    <label>Função<input id="concertPosition" placeholder="FOH, MON, Systems..."></label>
+    <label>Cachet (€)<input id="concertFee" type="number" step="0.01"></label>
+    <label>Notas<textarea id="concertNotes"></textarea></label>
+    <div class="actions"><button type="button" data-close>Cancelar</button><button type="submit">Guardar</button></div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
