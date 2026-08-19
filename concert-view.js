@@ -1,35 +1,10 @@
 (()=>{
-const q=id=>document.getElementById(id);
-function ensureDialog(){
- if(q('concertViewDialog'))return;
- document.body.insertAdjacentHTML('beforeend',`<dialog id="concertViewDialog"><div><div class="title-row"><h3 id="concertViewTitle">Detalhes da data</h3><button type="button" id="concertViewClose">Fechar</button></div><div id="concertViewBody" class="panel"></div></div></dialog>`);
- q('concertViewClose').onclick=()=>q('concertViewDialog').close();
-}
-function val(v){return v===null||v===undefined||v===''?'—':esc(v)}
-function techName(c){const p=(team||[]).find(x=>String(x.id)===String(c.technician_id));return p?.full_name||p?.email||'—'}
-function moneySafe(v){try{return money(v)}catch{return v??'—'}}
-function openConcertView(id){
- const c=(concerts||[]).find(x=>String(x.id)===String(id));if(!c)return;
- ensureDialog();
- q('concertViewTitle').textContent=`${c.artists?.name||'Trabalho'} · detalhes`;
- const rows=[
-  ['Artista',c.artists?.name],['Início',dt(c.starts_at)],['Fim',c.ends_at?dt(c.ends_at):'—'],['Local',c.venue],['Cidade',c.city],['Função',c.work_position],['Técnico',techName(c)],['Estado',c.booking_status||c.status],['Resposta do técnico',c.technician_response],['Call time',c.call_time],['Soundcheck',c.soundcheck_time],['Show',c.show_time],['Notas',c.notes]
- ];
- if(can('financials_view')){rows.push(['Cachet',moneySafe(c.fee_override)],['Recebido',moneySafe(c.amount_received)]);}
- q('concertViewBody').innerHTML=rows.map(([k,v])=>`<div style="margin:0 0 12px"><strong>${esc(k)}</strong><div class="muted" style="margin-top:4px;white-space:pre-wrap">${val(v)}</div></div>`).join('');
- q('concertViewDialog').showModal();
-}
-function injectViewButtons(container,arr){
- if(!container)return;
- const cards=[...container.querySelectorAll(':scope > .item')];
- cards.forEach((card,i)=>{const c=arr[i];if(!c)return;let actions=card.querySelector('.concert-actions');if(!actions){actions=document.createElement('div');actions.className='concert-actions';card.appendChild(actions)}if(!actions.querySelector('[data-concert-view]')){const b=document.createElement('button');b.type='button';b.className='secondary tiny';b.textContent='Ver';b.dataset.concertView=c.id;b.onclick=e=>{e.stopPropagation();openConcertView(c.id)};actions.prepend(b)}});
-}
-function refresh(){
- ensureDialog();
- injectViewButtons(q('concerts'),concerts||[]);
- const future=(concerts||[]).filter(c=>new Date(c.starts_at)>=new Date()&&!c.closed).slice(0,5);
- injectViewButtons(q('nextConcerts'),future);
-}
-addEventListener('load',()=>{setTimeout(refresh,300);setTimeout(refresh,1000)});
-window.openConcertView=openConcertView;
+const q=id=>document.getElementById(id);let editingId=null;
+function ensureDialog(){if(q('concertViewDialog'))return;document.body.insertAdjacentHTML('beforeend',`<dialog id="concertViewDialog"><form id="concertEditForm"><div class="title-row"><h3 id="concertViewTitle">Editar trabalho</h3><button type="button" id="concertViewClose">Fechar</button></div><label>Artista<select id="editConcertArtist"></select></label><label>Início<input id="editConcertStart" type="datetime-local"></label><label>Fim<input id="editConcertEnd" type="datetime-local"></label><label>Local / Morada<input id="editConcertVenue"></label><label>Cidade<input id="editConcertCity"></label><label>Função<select id="editConcertPosition"><option>FOH</option><option>ROH</option></select></label><label>Call time<input id="editConcertCall" type="time"></label><label>Soundcheck<input id="editConcertSoundcheck" type="time"></label><label>Show<input id="editConcertShow" type="time"></label><label>Notas<textarea id="editConcertNotes"></textarea></label><div id="editFinancials"><label>Cachet (€)<input id="editConcertFee" type="number" step=".01"></label><label>Recebido (€)<input id="editConcertReceived" type="number" step=".01"></label></div><div class="actions"><button type="button" id="concertEditCancel" class="secondary">Cancelar</button><button type="submit">Guardar alterações</button></div></form></dialog>`);q('concertViewClose').onclick=q('concertEditCancel').onclick=()=>q('concertViewDialog').close();q('concertEditForm').onsubmit=saveEdit}
+const localDT=v=>{if(!v)return'';const d=new Date(v),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`};
+function openConcertView(id){const c=(concerts||[]).find(x=>String(x.id)===String(id));if(!c)return;ensureDialog();editingId=c.id;q('concertViewTitle').textContent=`${c.artists?.name||'Trabalho'} · Editar`;q('editConcertArtist').innerHTML=(artists||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');q('editConcertArtist').value=c.artist_id||'';q('editConcertStart').value=localDT(c.starts_at);q('editConcertEnd').value=localDT(c.ends_at);q('editConcertVenue').value=c.venue||'';q('editConcertCity').value=c.city||'';q('editConcertPosition').value=c.work_position||'FOH';q('editConcertCall').value=c.call_time||'';q('editConcertSoundcheck').value=c.soundcheck_time||'';q('editConcertShow').value=c.show_time||'';q('editConcertNotes').value=c.notes||'';q('editFinancials').style.display=can('financials_view')?'':'none';q('editConcertFee').value=c.fee_override??'';q('editConcertReceived').value=c.amount_received??0;q('concertViewDialog').showModal()}
+async function saveEdit(e){e.preventDefault();if(!can('concerts_manage'))return toast('Sem permissão para editar trabalhos.');const patch={artist_id:q('editConcertArtist').value,starts_at:new Date(q('editConcertStart').value).toISOString(),ends_at:q('editConcertEnd').value?new Date(q('editConcertEnd').value).toISOString():null,venue:q('editConcertVenue').value||null,city:q('editConcertCity').value||null,work_position:q('editConcertPosition').value,call_time:q('editConcertCall').value||null,soundcheck_time:q('editConcertSoundcheck').value||null,show_time:q('editConcertShow').value||null,notes:q('editConcertNotes').value||null};if(can('financials_view')){patch.fee_override=q('editConcertFee').value||null;patch.amount_received=q('editConcertReceived').value||0}const r=await sb.from('concerts').update(patch).eq('id',editingId);if(r.error)return toast(r.error.message);q('concertViewDialog').close();toast('Trabalho atualizado');await loadAll();setTimeout(refresh,100)}
+function injectViewButtons(container,arr){if(!container)return;const cards=[...container.querySelectorAll(':scope > .item')];cards.forEach((card,i)=>{const c=arr[i];if(!c)return;let actions=card.querySelector('.concert-actions');if(!actions){actions=document.createElement('div');actions.className='concert-actions';card.appendChild(actions)}let b=actions.querySelector('[data-concert-view]');if(!b){b=document.createElement('button');b.type='button';b.className='secondary tiny';b.dataset.concertView=c.id;b.onclick=e=>{e.stopPropagation();openConcertView(c.id)};actions.prepend(b)}b.textContent=can('concerts_manage')?'Ver e Editar':'Ver'})}
+function refresh(){ensureDialog();injectViewButtons(q('concerts'),concerts||[]);const future=(concerts||[]).filter(c=>new Date(c.starts_at)>=new Date()&&!c.closed).slice(0,5);injectViewButtons(q('nextConcerts'),future)}
+addEventListener('load',()=>{setTimeout(refresh,300);setTimeout(refresh,1000)});window.openConcertView=openConcertView;
 })();
