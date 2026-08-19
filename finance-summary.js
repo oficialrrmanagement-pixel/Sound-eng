@@ -1,0 +1,8 @@
+(()=>{
+const q=id=>document.getElementById(id);
+function grossFor(c,personId){const total=Math.max(0,Number(c.fee_override||0)),principal=String(c.principal_technician_id||c.technician_id||''),sub=String(c.substitute_technician_id||''),pid=String(personId),subFee=sub?Math.max(0,Number(c.substitute_fee||0)):0,principalPart=sub?Math.max(0,Number(c.principal_commission??(total-subFee))):total;if(pid===principal)return principalPart;if(sub&&pid===sub)return subFee;return 0}
+function dueFor(person){return (concerts||[]).filter(c=>!c.closed).reduce((sum,c)=>{const total=Math.max(0,Number(c.fee_override||0));if(!total)return sum;const outstanding=Math.max(0,total-Number(c.amount_received||0));if(!outstanding)return sum;return sum+grossFor(c,person.id)*(outstanding/total)},0)}
+function render(){const host=q('dueByPerson');if(!host||!me)return;const title=host.previousElementSibling;if(me.role!=='admin'){host.classList.add('hidden');if(title)title.classList.add('hidden');return}host.classList.remove('hidden');if(title)title.classList.remove('hidden');host.innerHTML=(team||[]).filter(p=>p.active!==false).map(p=>`<article class="item"><div><strong>${esc(p.full_name||p.email||'Membro')}</strong><small>${roleLabel(p.role)}</small></div><span class="money">${money(dueFor(p))}</span></article>`).join('')||'<div class="empty">Sem membros na equipa.</div>'}
+if(!window.__financeSplitPatched&&typeof window.loadAll==='function'){const original=window.loadAll;window.loadAll=async function(...args){const out=await original.apply(this,args);setTimeout(render,0);return out};window.__financeSplitPatched=true}
+window.TeamDuckFinance={refresh:render,dueFor};render();setTimeout(render,350);setTimeout(render,1200);
+})();
