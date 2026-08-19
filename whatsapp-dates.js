@@ -14,7 +14,7 @@ function messageFor(c,p,type='new'){
  if(type==='change')return `${hi}\n\n🦆 *TEAM DUCK — ALTERAÇÃO DE DATA*\n\nHouve uma atualização nesta data de trabalho. Confirma, por favor, os novos dados:\n\n${core(c)}\n\nSe houver algum problema com esta alteração, avisa-me assim que possível.\n\nObrigado.`;
  if(type==='reminder')return `${hi}\n\n🦆 *TEAM DUCK — LEMBRETE DE TRABALHO*\n\nSó para relembrar a seguinte data:\n\n${core(c)}\n\nObrigado e até lá.`;
  if(type==='cancel')return `${hi}\n\n🦆 *TEAM DUCK — CANCELAMENTO DE DATA*\n\nEsta data foi *cancelada*:\n\n${core(c)}\n\nFica sem efeito na agenda. Obrigado pela disponibilidade.`;
- return `${hi}\n\n🦆 *TEAM DUCK — NOVA DATA DE TRABALHO*\n\nFoi-te atribuída a seguinte data:\n\n${core(c)}\n\nConfirma, por favor, a tua disponibilidade para esta data.\n\nObrigado.`;
+ return `${hi}\n\n🦆 *TEAM DUCK — PEDIDO DE DISPONIBILIDADE*\n\n${core(c)}\n\nConfirma a tua disponibilidade no link abaixo.`;
 }
 function say(msg){try{if(typeof toast==='function')toast(msg);else alert(msg)}catch(_){alert(msg)}}
 async function copyText(text){try{await navigator.clipboard.writeText(text);say('Mensagem copiada.')}catch(_){say('Não foi possível copiar a mensagem.')}}
@@ -24,17 +24,26 @@ function openWhatsApp(c,type='new'){
  const url=`https://wa.me/${phone}?text=${encodeURIComponent(messageFor(c,p,type))}`;
  location.href=url;
 }
-async function sendInteractive(c){
+async function createShareLink(c){
+ const r=await sb.functions.invoke('create-concert-share-link',{body:{concert_id:c.id}});
+ if(r.error||!r.data?.ok)throw new Error(r.data?.error||r.error?.message||'Não foi possível criar o link');
+ return r.data.invite_url;
+}
+async function shareInvite(c){
  const p=techFor(c);if(!p)return say('Esta data não tem técnico atribuído.');
- if(!normalizePhone(p.phone))return say('O técnico não tem telefone guardado no perfil.');
  try{
-  const r=await sb.functions.invoke('send-whatsapp-concert-invite',{body:{concert_id:c.id}});
-  if(!r.error&&r.data?.ok){say(`WhatsApp enviado para ${p.full_name||p.email}. A aguardar SIM/NÃO.`);await refreshData();return true}
-  const msg=r.data?.error||r.error?.message||'WhatsApp Business indisponível';
-  console.warn('WhatsApp Business fallback:',msg);
-  say('WhatsApp Business ainda não está ligado. Vou abrir o WhatsApp normal.');
-  openWhatsApp(c,'new');return false;
- }catch(err){console.warn('WhatsApp Business error',err);say('Não foi possível usar o envio automático. Vou abrir o WhatsApp normal.');openWhatsApp(c,'new');return false}
+  const url=await createShareLink(c);
+  const text=`${messageFor(c,p,'new')}\n\n${url}`;
+  if(navigator.share){
+   try{await navigator.share({title:'Team Duck · Confirmar data',text});return true}catch(e){if(e?.name==='AbortError')return false}
+  }
+  const phone=normalizePhone(p.phone);
+  if(phone){location.href=`https://wa.me/${phone}?text=${encodeURIComponent(text)}`;return true}
+  await navigator.clipboard.writeText(text);say('Convite copiado com o link.');return true;
+ }catch(err){console.warn('share invite failed',err);say(err?.message||'Não foi possível criar o convite.');return false}
+}
+async function copyInviteLink(c){
+ try{const url=await createShareLink(c);await navigator.clipboard.writeText(url);say('Link do convite copiado.')}catch(err){say(err?.message||'Não foi possível copiar o link.')}
 }
 function permitted(){try{return typeof can!=='function'||can('concerts_manage')}catch(_){return true}}
 async function refreshData(){
@@ -55,7 +64,10 @@ function attach(card,c){
  actions.querySelectorAll('[data-whatsapp-action]').forEach(x=>x.remove());
  const t=booking(c)==='cancelled'?'cancel':'new';
  if(t==='cancel')actions.appendChild(button('WhatsApp · Cancelamento',()=>openWhatsApp(c,'cancel'),'open'));
- else actions.appendChild(button('WhatsApp · Confirmar',()=>sendInteractive(c),'open'));
+ else {
+  actions.appendChild(button('Partilhar convite',()=>shareInvite(c),'share'));
+  actions.appendChild(button('Copiar link',()=>copyInviteLink(c),'copy-link'));
+ }
  if(t!=='cancel'){
   actions.appendChild(button('Enviar alteração',()=>openWhatsApp(c,'change'),'change'));
   actions.appendChild(button('Enviar lembrete',()=>openWhatsApp(c,'reminder'),'reminder'));
@@ -77,7 +89,7 @@ async function detectNewAfterSubmit(){
   const before=new Set(lastIds);await refreshData();
   const added=cacheConcerts.filter(c=>!before.has(String(c.id))).sort((a,b)=>new Date(b.starts_at)-new Date(a.starts_at))[0];
   lastIds=new Set(cacheConcerts.map(c=>String(c.id)));await decorate();
-  if(added?.technician_id){const p=techFor(added);if(p&&confirm(`Data criada para ${p.full_name||p.email}.\n\nQueres enviar já o pedido de disponibilidade por WhatsApp?`))sendInteractive(added)}
+  if(added?.technician_id){const p=techFor(added);if(p&&confirm(`Data criada para ${p.full_name||p.email}.\n\nQueres partilhar já o pedido de disponibilidade?`))shareInvite(added)}
  },1400);
 }
 function observeAgenda(){
@@ -90,6 +102,6 @@ function wire(){
  q('concertForm')?.addEventListener('submit',detectNewAfterSubmit);
  document.querySelectorAll('#nav button[data-page="agenda"]').forEach(b=>b.addEventListener('click',()=>setTimeout(async()=>{await refreshData();decorate()},180)));
 }
-window.TeamDuckWhatsApp={open:openWhatsApp,sendInteractive,messageFor,copyText,refresh:async()=>{await refreshData();await decorate()}};
+window.TeamDuckWhatsApp={open:openWhatsApp,shareInvite,copyInviteLink,messageFor,copyText,refresh:async()=>{await refreshData();await decorate()}};
 addEventListener('load',async()=>{wire();await refreshData();lastIds=new Set(cacheConcerts.map(c=>String(c.id)));await decorate();setTimeout(decorate,700);setTimeout(decorate,1600)});
 })();
