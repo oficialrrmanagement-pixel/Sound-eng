@@ -11,7 +11,8 @@ function injectFields(){
 function fillTechnicians(){
  const sel=q('concertTechnician'); if(!sel)return;
  const active=(team||[]).filter(p=>p.active!==false);
- sel.innerHTML='<option value="">Selecionar técnico</option>'+active.map(p=>`<option value="${p.id}">${esc(p.full_name||p.email||'Membro')} — ${esc(p.email||'sem e-mail')}</option>`).join('');
+ const html='<option value="">Selecionar técnico</option>'+active.map(p=>`<option value="${p.id}">${esc(p.full_name||p.email||'Membro')} — ${esc(p.email||'sem e-mail')}</option>`).join('');
+ if(sel.innerHTML!==html)sel.innerHTML=html;
 }
 function technicianName(c){const p=(team||[]).find(x=>x.id===c.technician_id);return p?.full_name||p?.email||'Sem técnico';}
 function bookingStatus(c){return c.booking_status||((c.status==='cancelled')?'cancelled':(c.status==='confirmed'?'confirmed':'reserved'));}
@@ -24,10 +25,11 @@ function decorateContainer(container,arr){
    let meta=card.querySelector('.concert-meta');
    if(!meta){meta=document.createElement('div');meta.className='concert-meta';card.querySelector('div:first-child')?.appendChild(meta)}
    const bs=statusMeta[bookingStatus(c)]||statusMeta.reserved, rs=responseMeta[responseStatus(c)]||responseMeta.pending;
-   meta.innerHTML=`<span class="status-chip ${bs.cls}"><i></i>${bs.label}</span><span class="status-chip ${rs.cls}"><i></i>${rs.label}</span><span class="tech-name">Técnico: ${esc(technicianName(c))}</span>`;
+   const metaHtml=`<span class="status-chip ${bs.cls}"><i></i>${bs.label}</span><span class="status-chip ${rs.cls}"><i></i>${rs.label}</span><span class="tech-name">Técnico: ${esc(technicianName(c))}</span>`;
+   if(meta.innerHTML!==metaHtml)meta.innerHTML=metaHtml;
    let actions=card.querySelector('.concert-actions');
    if(!actions){actions=document.createElement('div');actions.className='concert-actions';card.appendChild(actions)}
-   actions.innerHTML='';
+   actions.replaceChildren();
    if(me?.id===c.technician_id && responseStatus(c)==='pending'){
      const a=document.createElement('button');a.type='button';a.className='tiny';a.textContent='Aceitar';a.onclick=()=>respond(c.id,'accepted');
      const d=document.createElement('button');d.type='button';d.className='danger tiny';d.textContent='Recusar';d.onclick=()=>respond(c.id,'declined');
@@ -78,5 +80,11 @@ function patchSubmit(){
  };
 }
 function refresh(){injectFields();fillTechnicians();patchSubmit();decorate()}
-addEventListener('load',()=>{setTimeout(refresh,250);setTimeout(refresh,1000);const app=q('app');if(app)new MutationObserver(()=>{decorate();fillTechnicians()}).observe(app,{subtree:true,childList:true})});
+function patchLoadAll(){
+ if(window.__teamDuckLoadPatched||typeof window.loadAll!=='function')return;
+ const original=window.loadAll;
+ window.loadAll=async function(...args){const out=await original.apply(this,args);requestAnimationFrame(refresh);return out};
+ window.__teamDuckLoadPatched=true;
+}
+addEventListener('load',()=>{patchLoadAll();setTimeout(refresh,250);setTimeout(refresh,1000)});
 })();
