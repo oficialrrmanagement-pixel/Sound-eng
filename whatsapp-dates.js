@@ -22,9 +22,8 @@ function openWhatsApp(c,type='new'){
  const url=`https://wa.me/${phone}?text=${encodeURIComponent(messageFor(c,p,type))}`;window.open(url,'_blank','noopener');
 }
 function promptAfterCreate(c){
- if(!c?.technician_id)return;
- const p=techFor(c);if(!p)return;
- setTimeout(()=>{if(confirm(`Data criada para ${p.full_name||p.email}.\n\nQueres enviar já por WhatsApp?`))openWhatsApp(c,'new')},150);
+ if(!c?.technician_id)return;const p=techFor(c);if(!p)return;
+ setTimeout(()=>{if(confirm(`Data criada para ${p.full_name||p.email}.\n\nQueres enviar já por WhatsApp?`))openWhatsApp(c,'new')},120);
 }
 function ensureActions(card,c){
  if(!card||!c||c.closed)return;let actions=card.querySelector('.concert-actions');if(!actions){actions=document.createElement('div');actions.className='concert-actions';card.appendChild(actions)}
@@ -38,7 +37,18 @@ function ensureActions(card,c){
  const cp=document.createElement('button');cp.type='button';cp.className='secondary tiny';cp.dataset.whatsappAction='copy';cp.textContent='Copiar mensagem';cp.onclick=()=>copyText(messageFor(c,techFor(c),type));actions.appendChild(cp);
 }
 function decorate(){const host=q('concerts');if(!host)return;const cards=[...host.querySelectorAll(':scope > .item')];cards.forEach((card,i)=>ensureActions(card,(window.concerts||concerts||[])[i]))}
-function patchLoadAll(){if(window.__whatsappDatesPatched||typeof window.loadAll!=='function')return;const old=window.loadAll;window.loadAll=async function(...args){const out=await old.apply(this,args);setTimeout(decorate,50);return out};window.__whatsappDatesPatched=true}
+function patchCreateFlow(){
+ const form=q('concertForm');if(!form||form.dataset.whatsappCreatePatched||typeof form.onsubmit!=='function')return false;
+ const old=form.onsubmit;form.dataset.whatsappCreatePatched='1';
+ form.onsubmit=async function(e){
+  const before=new Set((window.concerts||concerts||[]).map(c=>String(c.id)));
+  await old.call(this,e);
+  const added=(window.concerts||concerts||[]).filter(c=>!before.has(String(c.id))).sort((a,b)=>new Date(b.starts_at)-new Date(a.starts_at))[0];
+  if(added)promptAfterCreate(added);
+ };
+ return true;
+}
+function patchLoadAll(){if(window.__whatsappDatesPatched||typeof window.loadAll!=='function')return;const old=window.loadAll;window.loadAll=async function(...args){const out=await old.apply(this,args);setTimeout(()=>{decorate();patchCreateFlow()},50);return out};window.__whatsappDatesPatched=true}
 window.TeamDuckWhatsApp={open:openWhatsApp,messageFor,promptAfterCreate,copyText};
-addEventListener('load',()=>{patchLoadAll();setTimeout(decorate,500);setTimeout(decorate,1200)});
+addEventListener('load',()=>{patchLoadAll();setTimeout(()=>{decorate();patchCreateFlow()},500);setTimeout(()=>{decorate();patchCreateFlow()},1200);setTimeout(patchCreateFlow,2200)});
 })();
