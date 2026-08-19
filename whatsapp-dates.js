@@ -1,0 +1,16 @@
+(()=>{
+const q=id=>document.getElementById(id);
+const STATUS={confirmed:'Confirmado',reserved:'Reservado',cancelled:'Cancelado'};
+function techFor(c){return (window.team||team||[]).find(p=>String(p.id)===String(c.technician_id))||null}
+function normalizePhone(raw){let d=String(raw||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.length===9)d='351'+d;return d}
+function dateParts(c){const d=new Date(c.starts_at);return {date:d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}),time:d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}}
+function booking(c){return c.booking_status||((c.status==='cancelled')?'cancelled':(c.status==='confirmed'?'confirmed':'reserved'))}
+function place(c){const a=[c.venue,c.city].filter(Boolean);return a.length?a.join(' · '):'Por definir'}
+function messageFor(c,p){const d=dateParts(c),name=(p?.full_name||p?.email||'').trim(),first=name.split(/\s+/)[0]||'Olá';return `Olá ${first},\n\n🦆 *TEAM DUCK — DATA DE TRABALHO*\n\n🎤 *Artista:* ${c.artists?.name||'Trabalho'}\n📅 *Data:* ${d.date}\n🕒 *Hora:* ${d.time}\n📍 *Local:* ${place(c)}\n🎚 *Função:* ${c.work_position||'Por definir'}\n📌 *Estado:* ${STATUS[booking(c)]||booking(c)}\n\nConfirma, por favor, a tua disponibilidade para esta data.\n\nObrigado.`}
+async function copyText(text){try{await navigator.clipboard.writeText(text);toast('Mensagem copiada.')}catch(_){toast('Não foi possível copiar a mensagem.')}}
+function openWhatsApp(c){const p=techFor(c);if(!p)return toast('Esta data não tem técnico atribuído.');const phone=normalizePhone(p.phone);if(!phone)return toast('O técnico não tem telefone guardado no perfil.');const url=`https://wa.me/${phone}?text=${encodeURIComponent(messageFor(c,p))}`;window.open(url,'_blank','noopener')}
+function ensureActions(card,c){if(!card||!c||c.closed)return;let actions=card.querySelector('.concert-actions');if(!actions){actions=document.createElement('div');actions.className='concert-actions';card.appendChild(actions)}actions.querySelectorAll('[data-whatsapp-action]').forEach(x=>x.remove());if(!can('concerts_manage'))return;const p=techFor(c);const wa=document.createElement('button');wa.type='button';wa.className='secondary tiny';wa.dataset.whatsappAction='open';wa.textContent='WhatsApp';wa.onclick=()=>openWhatsApp(c);actions.appendChild(wa);const cp=document.createElement('button');cp.type='button';cp.className='secondary tiny';cp.dataset.whatsappAction='copy';cp.textContent='Copiar mensagem';cp.onclick=()=>copyText(messageFor(c,p));actions.appendChild(cp)}
+function decorate(){const host=q('concerts');if(!host)return;const cards=[...host.querySelectorAll(':scope > .item')];cards.forEach((card,i)=>ensureActions(card,(window.concerts||concerts||[])[i]))}
+function patchLoadAll(){if(window.__whatsappDatesPatched||typeof window.loadAll!=='function')return;const old=window.loadAll;window.loadAll=async function(...args){const out=await old.apply(this,args);setTimeout(decorate,50);return out};window.__whatsappDatesPatched=true}
+addEventListener('load',()=>{patchLoadAll();setTimeout(decorate,500);setTimeout(decorate,1200)});
+})();
