@@ -14,5 +14,9 @@ function patchLoad(){
   window.loadAll=async function(...args){const out=await original.apply(this,args);requestAnimationFrame(restoreAdminActions);setTimeout(restoreAdminActions,150);return out};
   window.__adminActionsPatched=true;
 }
-addEventListener('load',()=>{patchLoad();setTimeout(restoreAdminActions,300);setTimeout(restoreAdminActions,1000)});
+function loadInviteApproval(){
+  if(document.getElementById('teamInviteApprovalScript'))return;
+  const s=document.createElement('script');s.id='teamInviteApprovalScript';s.src='team-invite-approval.js?v=20260819-approval1';document.body.appendChild(s);
+}
+addEventListener('load',()=>{patchLoad();loadInviteApproval();setTimeout(restoreAdminActions,300);setTimeout(restoreAdminActions,1000)});
 })();
