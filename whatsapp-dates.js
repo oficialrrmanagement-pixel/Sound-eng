@@ -24,11 +24,23 @@ function openWhatsApp(c,type='new'){
  const url=`https://wa.me/${phone}?text=${encodeURIComponent(messageFor(c,p,type))}`;
  location.href=url;
 }
+async function sendInteractive(c){
+ const p=techFor(c);if(!p)return say('Esta data não tem técnico atribuído.');
+ if(!normalizePhone(p.phone))return say('O técnico não tem telefone guardado no perfil.');
+ try{
+  const r=await sb.functions.invoke('send-whatsapp-concert-invite',{body:{concert_id:c.id}});
+  if(!r.error&&r.data?.ok){say(`WhatsApp enviado para ${p.full_name||p.email}. A aguardar SIM/NÃO.`);await refreshData();return true}
+  const msg=r.data?.error||r.error?.message||'WhatsApp Business indisponível';
+  console.warn('WhatsApp Business fallback:',msg);
+  say('WhatsApp Business ainda não está ligado. Vou abrir o WhatsApp normal.');
+  openWhatsApp(c,'new');return false;
+ }catch(err){console.warn('WhatsApp Business error',err);say('Não foi possível usar o envio automático. Vou abrir o WhatsApp normal.');openWhatsApp(c,'new');return false}
+}
 function permitted(){try{return typeof can!=='function'||can('concerts_manage')}catch(_){return true}}
 async function refreshData(){
  try{
   const [cr,pr]=await Promise.all([
-   sb.from('concerts').select('id,starts_at,ends_at,venue,city,work_position,technician_id,booking_status,status,closed,artists(name)').order('starts_at'),
+   sb.from('concerts').select('id,starts_at,ends_at,venue,city,work_position,technician_id,booking_status,status,closed,technician_response,technician_response_at,technician_response_source,artists(name)').order('starts_at'),
    sb.from('profiles').select('id,full_name,email,phone,active').order('full_name')
   ]);
   if(cr.error)throw cr.error;if(pr.error)throw pr.error;
@@ -42,7 +54,8 @@ function attach(card,c){
  let actions=card.querySelector('.concert-actions');if(!actions){actions=document.createElement('div');actions.className='concert-actions';card.appendChild(actions)}
  actions.querySelectorAll('[data-whatsapp-action]').forEach(x=>x.remove());
  const t=booking(c)==='cancelled'?'cancel':'new';
- actions.appendChild(button(t==='cancel'?'WhatsApp · Cancelamento':'WhatsApp',()=>openWhatsApp(c,t),'open'));
+ if(t==='cancel')actions.appendChild(button('WhatsApp · Cancelamento',()=>openWhatsApp(c,'cancel'),'open'));
+ else actions.appendChild(button('WhatsApp · Confirmar',()=>sendInteractive(c),'open'));
  if(t!=='cancel'){
   actions.appendChild(button('Enviar alteração',()=>openWhatsApp(c,'change'),'change'));
   actions.appendChild(button('Enviar lembrete',()=>openWhatsApp(c,'reminder'),'reminder'));
@@ -64,7 +77,7 @@ async function detectNewAfterSubmit(){
   const before=new Set(lastIds);await refreshData();
   const added=cacheConcerts.filter(c=>!before.has(String(c.id))).sort((a,b)=>new Date(b.starts_at)-new Date(a.starts_at))[0];
   lastIds=new Set(cacheConcerts.map(c=>String(c.id)));await decorate();
-  if(added?.technician_id){const p=techFor(added);if(p&&confirm(`Data criada para ${p.full_name||p.email}.\n\nQueres enviar já por WhatsApp?`))openWhatsApp(added,'new')}
+  if(added?.technician_id){const p=techFor(added);if(p&&confirm(`Data criada para ${p.full_name||p.email}.\n\nQueres enviar já o pedido de disponibilidade por WhatsApp?`))sendInteractive(added)}
  },1400);
 }
 function observeAgenda(){
@@ -77,6 +90,6 @@ function wire(){
  q('concertForm')?.addEventListener('submit',detectNewAfterSubmit);
  document.querySelectorAll('#nav button[data-page="agenda"]').forEach(b=>b.addEventListener('click',()=>setTimeout(async()=>{await refreshData();decorate()},180)));
 }
-window.TeamDuckWhatsApp={open:openWhatsApp,messageFor,copyText,refresh:async()=>{await refreshData();await decorate()}};
+window.TeamDuckWhatsApp={open:openWhatsApp,sendInteractive,messageFor,copyText,refresh:async()=>{await refreshData();await decorate()}};
 addEventListener('load',async()=>{wire();await refreshData();lastIds=new Set(cacheConcerts.map(c=>String(c.id)));await decorate();setTimeout(decorate,700);setTimeout(decorate,1600)});
 })();
