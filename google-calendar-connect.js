@@ -1,13 +1,14 @@
 (()=>{
 const FLAG='teamduck-google-calendar-linking';
 const SCOPE='openid email profile https://www.googleapis.com/auth/calendar.events';
+const PROD_ORIGIN='https://rosas-sound-eng-v3.vercel.app';
 function q(id){return document.getElementById(id)}
 async function status(){
  try{const {data:{user}}=await sb.auth.getUser();if(!user)return;const r=await sb.from('calendar_connections').select('google_account_email,sync_enabled').eq('user_id',user.id).eq('provider','google').maybeSingle();const b=q('googleCalendarBtn');if(!b)return;if(r.data?.sync_enabled){b.textContent='Calendar ✓';b.title=r.data.google_account_email||'Google Calendar ligado'}else{b.textContent='Ligar Calendar';b.title='Liga o Google Calendar'}}catch(_){}
 }
 async function saveProviderTokens(session){if(!session?.provider_token)return false;const r=await sb.functions.invoke('save-google-calendar-token',{body:{access_token:session.provider_token,refresh_token:session.provider_refresh_token||null}});if(r.error||!r.data?.ok){toast('Não foi possível concluir a ligação ao Google Calendar.');return false}localStorage.removeItem(FLAG);toast('Google Calendar ligado.');await status();return true}
 async function connect(){
- localStorage.setItem(FLAG,'1');const redirectTo=location.origin+location.pathname;
+ localStorage.setItem(FLAG,'1');const redirectTo=PROD_ORIGIN+location.pathname;
  // Existing Google-authenticated accounts can re-consent and provide Calendar scope without identity linking.
  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{scopes:SCOPE,redirectTo,queryParams:{access_type:'offline',prompt:'consent',include_granted_scopes:'true'}}});
  if(error){localStorage.removeItem(FLAG);toast('Não foi possível abrir o Google Calendar: '+error.message)}
