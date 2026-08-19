@@ -3,6 +3,7 @@ let activeAgendaFilter='ALL';
 const q=id=>document.getElementById(id);
 function techFor(c){return (team||[]).find(x=>String(x.id)===String(c.technician_id))||null}
 function matches(c){
+ if(c?.closed)return false;
  const pos=String(c?.work_position||'').trim().toUpperCase();
  if(activeAgendaFilter==='ALL')return true;
  if(activeAgendaFilter==='FOH')return pos==='FOH';
@@ -18,7 +19,7 @@ function applyAgendaFilter(){
  let empty=q('agendaFilterEmpty');
  if(!empty){empty=document.createElement('div');empty.id='agendaFilterEmpty';empty.className='empty';container.insertAdjacentElement('afterend',empty)}
  empty.style.display=visible===0?'':'none';
- empty.textContent=activeAgendaFilter==='FOH'?'Sem datas FOH.':activeAgendaFilter==='ROH'?'Sem datas ROH.':activeAgendaFilter==='SUB'?'Sem datas atribuídas a substitutos.':'Sem trabalhos.';
+ empty.textContent=activeAgendaFilter==='FOH'?'Sem datas FOH.':activeAgendaFilter==='ROH'?'Sem datas ROH.':activeAgendaFilter==='SUB'?'Sem datas atribuídas a substitutos.':'Sem trabalhos ativos.';
  const title=document.querySelector('#agenda .title-row h2');
  if(title)title.textContent=activeAgendaFilter==='ALL'?'Agenda':activeAgendaFilter==='SUB'?'Agenda · Substitutos':`Agenda · ${activeAgendaFilter}`;
 }
