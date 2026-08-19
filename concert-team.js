@@ -17,9 +17,18 @@ function fillTechnicians(){
 function technicianName(c){const p=(team||[]).find(x=>x.id===c.technician_id);return p?.full_name||p?.email||'Sem técnico';}
 function bookingStatus(c){return c.booking_status||((c.status==='cancelled')?'cancelled':(c.status==='confirmed'?'confirmed':'reserved'));}
 function responseStatus(c){return c.technician_response||'pending';}
+async function edgeErrorMessage(r){
+ if(r?.data?.error)return r.data.error;
+ const ctx=r?.error?.context;
+ if(ctx){
+  try{const body=await ctx.clone().json();if(body?.error)return body.error;if(body?.message)return body.message}catch(_){ }
+  try{const text=await ctx.clone().text();if(text)return text}catch(_){ }
+ }
+ return r?.error?.message||'Não foi possível enviar o e-mail';
+}
 async function sendTechnicianEmail(c,quiet=false){
  const r=await sb.functions.invoke('send-concert-invite',{body:{concert_id:c.id}});
- if(r.error||!r.data?.ok){if(!quiet)toast(r.data?.error||r.error?.message||'Não foi possível enviar o e-mail');return false}
+ if(r.error||!r.data?.ok){const msg=await edgeErrorMessage(r);console.error('send-concert-invite:',msg,r.error);if(!quiet)toast('E-mail: '+msg);return false}
  if(!quiet)toast('Convite enviado por e-mail para '+(r.data.email||'o técnico'));
  return true;
 }
