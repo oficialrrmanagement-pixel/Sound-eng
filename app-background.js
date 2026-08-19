@@ -15,5 +15,6 @@ function applyTeamDuckBackground(){
   }catch(err){console.warn('Team Duck background could not be applied',err)}
 }
 function loadStyle(src,key){if(document.querySelector(`link[data-team-duck-style="${key}"]`))return;const l=document.createElement('link');l.rel='stylesheet';l.href=src;l.dataset.teamDuckStyle=key;document.head.appendChild(l)}
-addEventListener('load',()=>{applyTeamDuckBackground();loadStyle('premium-ui.css?v=20260819-premium1','premium-ui')});
+function loadScript(src,key){if(document.querySelector(`script[data-team-duck-extra="${key}"]`))return;const s=document.createElement('script');s.src=src;s.dataset.teamDuckExtra=key;document.body.appendChild(s)}
+addEventListener('load',()=>{applyTeamDuckBackground();loadStyle('premium-ui.css?v=20260819-premium1','premium-ui');loadScript('dual-assignments.js?v=20260819-dual1','dual-assignments')});
 })();
