@@ -1,1 +1,1 @@
-{"cleanUrls":true,"trailingSlash":false}
+{"cleanUrls":true,"trailingSlash":false,"rewrites":[{"source":"/icon.svg","destination":"https://fnuchugrbwvmmtfbpboa.supabase.co/functions/v1/team-duck-icon"},{"source":"/apple-touch-icon.png","destination":"https://fnuchugrbwvmmtfbpboa.supabase.co/functions/v1/team-duck-icon"},{"source":"/favicon.ico","destination":"https://fnuchugrbwvmmtfbpboa.supabase.co/functions/v1/team-duck-icon"}]}
