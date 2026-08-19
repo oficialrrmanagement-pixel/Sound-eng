@@ -15,7 +15,7 @@ function applyTeamDuckBackground(){
   }catch(err){console.warn('Team Duck background could not be applied',err)}
 }
 function loadScript(src,key){if(document.querySelector(`script[data-team-duck-extra="${key}"]`))return;const s=document.createElement('script');s.src=src;s.dataset.teamDuckExtra=key;document.body.appendChild(s)}
+function loadStyle(src,key){if(document.querySelector(`link[data-team-duck-style="${key}"]`))return;const l=document.createElement('link');l.rel='stylesheet';l.href=src;l.dataset.teamDuckStyle=key;document.head.appendChild(l)}
 function loadPasswordRecovery(){if(document.querySelector('script[data-password-recovery]'))return;const s=document.createElement('script');s.src='password-recovery.js?v=20260819-1';s.dataset.passwordRecovery='1';document.body.appendChild(s)}
-addEventListener('load',()=>{applyTeamDuckBackground();loadPasswordRecovery();loadScript('agenda-views.js?v=20260819-2','agenda-views');loadScript('whatsapp-dates.js?v=20260819-1','whatsapp-dates');loadScript('concert-share.js?v=20260819-1','concert-share')});
+addEventListener('load',()=>{applyTeamDuckBackground();loadPasswordRecovery();loadScript('agenda-views.js?v=20260819-2','agenda-views');loadScript('whatsapp-dates.js?v=20260819-1','whatsapp-dates');loadScript('concert-share.js?v=20260819-1','concert-share');loadStyle('premium-ui.css?v=20260819-premium1','premium-ui')});
 })();
-// deployment-retry-20260819-1833
