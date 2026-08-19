@@ -11,10 +11,10 @@ function firstName(p){const name=(p?.full_name||p?.email||'').trim();return name
 function core(c){const d=dateParts(c);return `🎤 *Artista:* ${c.artists?.name||'Trabalho'}\n📅 *Data:* ${d.date}\n🕒 *Hora:* ${d.time}\n📍 *Local:* ${place(c)}\n🎚 *Função:* ${c.work_position||'Por definir'}\n📌 *Estado:* ${STATUS[booking(c)]||booking(c)}`}
 function messageFor(c,p,type='new'){
  const hi=`Olá ${firstName(p)},`;
- if(type==='change')return `${hi}\n\n🦆 *TEAM DUCK — ALTERAÇÃO DE DATA*\n\nHouve uma atualização nesta data de trabalho. Confirma, por favor, os novos dados:\n\n${core(c)}\n\nSe houver algum problema com esta alteração, avisa-me assim que possível.\n\nObrigado.`;
- if(type==='reminder')return `${hi}\n\n🦆 *TEAM DUCK — LEMBRETE DE TRABALHO*\n\nSó para relembrar a seguinte data:\n\n${core(c)}\n\nObrigado e até lá.`;
- if(type==='cancel')return `${hi}\n\n🦆 *TEAM DUCK — CANCELAMENTO DE DATA*\n\nEsta data foi *cancelada*:\n\n${core(c)}\n\nFica sem efeito na agenda. Obrigado pela disponibilidade.`;
- return `${hi}\n\n🦆 *TEAM DUCK — PEDIDO DE DISPONIBILIDADE*\n\n${core(c)}\n\nConfirma a tua disponibilidade no link abaixo.`;
+ if(type==='change')return `${hi}\n\n🐥 *TEAM DUCK — ALTERAÇÃO DE DATA*\n\nHouve uma atualização nesta data de trabalho. Confirma, por favor, os novos dados:\n\n${core(c)}\n\nSe houver algum problema com esta alteração, avisa-me assim que possível.\n\nObrigado.`;
+ if(type==='reminder')return `${hi}\n\n🐥 *TEAM DUCK — LEMBRETE DE TRABALHO*\n\nSó para relembrar a seguinte data:\n\n${core(c)}\n\nObrigado e até lá.`;
+ if(type==='cancel')return `${hi}\n\n🐥 *TEAM DUCK — CANCELAMENTO DE DATA*\n\nEsta data foi *cancelada*:\n\n${core(c)}\n\nFica sem efeito na agenda. Obrigado pela disponibilidade.`;
+ return `${hi}\n\n🐥 *TEAM DUCK — PEDIDO DE DISPONIBILIDADE*\n\n${core(c)}\n\nConfirma a tua disponibilidade no link abaixo:`;
 }
 function say(msg){try{if(typeof toast==='function')toast(msg);else alert(msg)}catch(_){alert(msg)}}
 async function copyText(text){try{await navigator.clipboard.writeText(text);say('Mensagem copiada.')}catch(_){say('Não foi possível copiar a mensagem.')}}
@@ -27,19 +27,18 @@ function openWhatsApp(c,type='new'){
 async function createShareLink(c){
  const r=await sb.functions.invoke('create-concert-share-link',{body:{concert_id:c.id}});
  if(r.error||!r.data?.ok)throw new Error(r.data?.error||r.error?.message||'Não foi possível criar o link');
+ if(!r.data.invite_url)throw new Error('O convite foi criado sem link.');
  return r.data.invite_url;
 }
 async function shareInvite(c){
  const p=techFor(c);if(!p)return say('Esta data não tem técnico atribuído.');
+ const phone=normalizePhone(p.phone);if(!phone)return say('O técnico não tem telefone guardado no perfil.');
  try{
-  const url=await createShareLink(c);
-  const text=`${messageFor(c,p,'new')}\n\n${url}`;
-  if(navigator.share){
-   try{await navigator.share({title:'Team Duck · Confirmar data',text});return true}catch(e){if(e?.name==='AbortError')return false}
-  }
-  const phone=normalizePhone(p.phone);
-  if(phone){location.href=`https://wa.me/${phone}?text=${encodeURIComponent(text)}`;return true}
-  await navigator.clipboard.writeText(text);say('Convite copiado com o link.');return true;
+  const inviteUrl=await createShareLink(c);
+  const text=`${messageFor(c,p,'new')}\n\n🔗 ${inviteUrl}\n\nObrigado. 🐥`;
+  const wa=`https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  location.href=wa;
+  return true;
  }catch(err){console.warn('share invite failed',err);say(err?.message||'Não foi possível criar o convite.');return false}
 }
 async function copyInviteLink(c){
@@ -61,11 +60,11 @@ function button(text,action,type){const b=document.createElement('button');b.typ
 function attach(card,c){
  if(!card||!c||c.closed||!permitted())return;
  let actions=card.querySelector('.concert-actions');if(!actions){actions=document.createElement('div');actions.className='concert-actions';card.appendChild(actions)}
- actions.querySelectorAll('[data-whatsapp-action]').forEach(x=>x.remove());
+ actions.querySelectorAll('[data-whatsapp-action],[data-share-invite],[data-copy-invite]').forEach(x=>x.remove());
  const t=booking(c)==='cancelled'?'cancel':'new';
  if(t==='cancel')actions.appendChild(button('WhatsApp · Cancelamento',()=>openWhatsApp(c,'cancel'),'open'));
  else {
-  actions.appendChild(button('Partilhar convite',()=>shareInvite(c),'share'));
+  actions.appendChild(button('🐥 Partilhar convite',()=>shareInvite(c),'share'));
   actions.appendChild(button('Copiar link',()=>copyInviteLink(c),'copy-link'));
  }
  if(t!=='cancel'){
@@ -89,7 +88,7 @@ async function detectNewAfterSubmit(){
   const before=new Set(lastIds);await refreshData();
   const added=cacheConcerts.filter(c=>!before.has(String(c.id))).sort((a,b)=>new Date(b.starts_at)-new Date(a.starts_at))[0];
   lastIds=new Set(cacheConcerts.map(c=>String(c.id)));await decorate();
-  if(added?.technician_id){const p=techFor(added);if(p&&confirm(`Data criada para ${p.full_name||p.email}.\n\nQueres partilhar já o pedido de disponibilidade?`))shareInvite(added)}
+  if(added?.technician_id){const p=techFor(added);if(p&&confirm(`Data criada para ${p.full_name||p.email}.\n\nQueres partilhar já o pedido de disponibilidade por WhatsApp?`))shareInvite(added)}
  },1400);
 }
 function observeAgenda(){
