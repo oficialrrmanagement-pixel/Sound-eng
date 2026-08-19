@@ -18,5 +18,5 @@ function decorate(){const host=q('concerts');if(!host)return;const cards=[...hos
 function patchForm(){const f=q('concertForm');if(!f||f.dataset.dualPatched)return;f.dataset.dualPatched='1';f.onsubmit=createConcert}
 async function refresh(){injectForm();fillFormOptions();patchForm();await loadAssignments();decorate()}
 function observe(){const host=q('concerts');if(!host||host.dataset.dualObserved)return;host.dataset.dualObserved='1';new MutationObserver(()=>setTimeout(()=>{decorate()},180)).observe(host,{childList:true,subtree:false})}
-addEventListener('load',()=>{setTimeout(refresh,350);setTimeout(refresh,1200);observe();document.querySelectorAll('#nav button[data-page="agenda"]').forEach(b=>b.addEventListener('click',()=>setTimeout(refresh,180)));q('newConcert')?.addEventListener('click',()=>setTimeout(()=>{injectForm();fillFormOptions();patchForm()},80))});window.TeamDuckAssignments={refresh};
+addEventListener('load',()=>{setTimeout(refresh,350);setTimeout(refresh,1200);observe();document.querySelectorAll('#nav button[data-page="agenda"]').forEach(b=>b.addEventListener('click',()=>setTimeout(refresh,180)));q('newConcert')?.addEventListener('click',()=>setTimeout(()=>{injectForm();fillFormOptions();patchForm()},80))});window.TeamDuckAssignments={refresh,byConcert,getAll:()=>assignments};
 })();
