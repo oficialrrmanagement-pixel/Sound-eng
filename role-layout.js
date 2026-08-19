@@ -28,12 +28,14 @@ function addPreviewControl(){
  }
 }
 function filterCardsForPartner(){
- const uid=currentUserId();
- const cards=[...document.querySelectorAll('#concerts > .item')];cards.forEach((card,i)=>{const c=(concerts||[])[i];if(c&&String(c.principal_technician_id||'')!==uid)card.style.display='none'});
- const acards=[...document.querySelectorAll('#artistList > .item')];acards.forEach((card,i)=>{const a=(artists||[])[i];if(a&&String(a.principal_technician_id||'')!==uid)card.style.display='none'});
+ if(isPreview())return;
+ const uid=currentUserId();if(!uid)return;
+ const cards=[...document.querySelectorAll('#concerts > .item')];cards.forEach((card,i)=>{const c=(concerts||[])[i];const mine=!!c&&String(c.principal_technician_id||c.technician_id||c.owner_id||'')===uid;card.style.display=mine?'':'none'});
+ const acards=[...document.querySelectorAll('#artistList > .item')];acards.forEach((card,i)=>{const a=(artists||[])[i];if(a?.principal_technician_id&&String(a.principal_technician_id)!==uid)card.style.display='none'});
 }
 function filterCardsForSubstitute(){
- const uid=currentUserId();
+ if(isPreview())return;
+ const uid=currentUserId();if(!uid)return;
  const cards=[...document.querySelectorAll('#concerts > .item')];cards.forEach((card,i)=>{const c=(concerts||[])[i];const mine=!!c&&String(c.substitute_technician_id||'')===uid;card.style.display=mine?'':'none'});
 }
 function applyPartner(){
@@ -42,13 +44,13 @@ function applyPartner(){
  show(q('newConcert'));show(q('newArtist'));
  const teamTitle=document.querySelector('#dashboard h3:last-of-type');if(teamTitle&&/Equipa/i.test(teamTitle.textContent||''))hide(teamTitle);
  hide(q('dueByPerson'));document.querySelectorAll('#memberDialog,#inviteDialog,#inviteLinkDialog').forEach(hide);
- if(isPreview())filterCardsForPartner();
+ filterCardsForPartner();
 }
 async function loadSubDirectory(){
  const host=q('artistList');if(!host)return;
  const [dir,con]=await Promise.all([sb.from('artist_directory').select('id,name').order('name'),sb.from('concerts').select('artist_id,starts_at,ends_at,status,substitute_technician_id,technician_id')]);
- const rows=dir.data||[], all=con.data||[],now=Date.now(),uid=currentUserId();
- const mine=isPreview()?all.filter(c=>String(c.substitute_technician_id||'')===uid):all;
+ const rows=dir.data||[],all=con.data||[],now=Date.now(),uid=currentUserId();
+ const mine=isPreview()?all:all.filter(c=>String(c.substitute_technician_id||'')===uid);
  const allowed=new Set(mine.filter(c=>c.status!=='cancelled'&&new Date(c.ends_at||new Date(new Date(c.starts_at).getTime()+12*3600000)).getTime()>=now).map(c=>String(c.artist_id)));
  host.innerHTML=rows.map(a=>`<article class="item"><div><strong>${esc(a.name)}</strong><small>${allowed.has(String(a.id))?'Ficheiros disponíveis para a tua data':'Acesso restrito'}</small></div><div class="file-actions">${allowed.has(String(a.id))?`<button type="button" class="secondary tiny" data-sub-files="${a.id}" data-sub-name="${esc(a.name)}">Ficheiros</button>`:'<span class="muted">🔒</span>'}</div></article>`).join('')||'<div class="empty">Sem artistas.</div>';
  document.querySelectorAll('[data-sub-files]').forEach(b=>b.onclick=async()=>{currentArtist={id:b.dataset.subFiles,name:b.dataset.subName};q('artistFilesTitle').textContent='Ficheiros · '+b.dataset.subName;q('artistFilesDialog').showModal();await loadArtistFiles();lockSubFileDialog()});
@@ -61,7 +63,7 @@ function applySubstitute(){
  hide(q('newConcert'));hide(q('newArtist'));hide(q('newMember'));hide(q('dashboard'));hide(q('closed'));hide(q('team'));
  document.querySelectorAll('.money,#dueByPerson,.stats,[data-finance-split],#concertDialog,#artistDialog').forEach(hide);
  const title=document.querySelector('#artists .title-row h2');if(title)title.textContent='Ficheiros dos artistas';const artistNav=navButton('artists');if(artistNav)artistNav.textContent='Ficheiros';
- if(isPreview())filterCardsForSubstitute();loadSubDirectory();lockSubFileDialog();
+ filterCardsForSubstitute();loadSubDirectory();lockSubFileDialog();
 }
 function applyRoleLayout(){
  const role=effectiveRole();if(!role)return false;document.body.dataset.teamDuckRole=role;document.body.dataset.actualRole=actualRole()||'';addPreviewControl();
