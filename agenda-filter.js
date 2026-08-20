@@ -16,7 +16,15 @@ function applyAgendaFilter(){
  const container=q('concerts');if(!container)return;
  const cards=[...container.querySelectorAll(':scope > .item')];
  let visible=0;
- cards.forEach((card,i)=>{const c=(concerts||[])[i];const show=!!c&&matches(c);card.style.display=show?'':'none';if(show)visible++});
+ cards.forEach((card,i)=>{
+   const c=(concerts||[])[i];
+   const filterOK=!!c&&matches(c);
+   card.dataset.filterHidden=filterOK?'0':'1';
+   const memberOK=card.dataset.memberHidden!=='1';
+   const show=filterOK&&memberOK;
+   card.style.display=show?'':'none';
+   if(show)visible++;
+ });
  let empty=q('agendaFilterEmpty');
  if(!empty){empty=document.createElement('div');empty.id='agendaFilterEmpty';empty.className='empty';container.insertAdjacentElement('afterend',empty)}
  empty.style.display=visible===0?'':'none';
@@ -24,7 +32,7 @@ function applyAgendaFilter(){
  const title=document.querySelector('#agenda .title-row h2');
  if(title)title.textContent=activeAgendaFilter==='ALL'?'Agenda':activeAgendaFilter==='SUB'?'Agenda · Substitutos':`Agenda · ${activeAgendaFilter}`;
 }
-function setFilter(value,button){activeAgendaFilter=value;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b===button));setTimeout(applyAgendaFilter,120);setTimeout(applyAgendaFilter,500)}
+function setFilter(value,button){activeAgendaFilter=value;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b===button));setTimeout(applyAgendaFilter,50);setTimeout(applyAgendaFilter,250);setTimeout(applyAgendaFilter,700)}
 function wire(){
  const agendaBtn=document.querySelector('#nav button[data-page="agenda"]:not([data-agenda-filter])');
  const fohBtn=document.querySelector('#nav button[data-agenda-filter="FOH"]');
@@ -32,6 +40,7 @@ function wire(){
  const subBtn=document.querySelector('#nav button[data-agenda-filter="SUB"]');
  [[agendaBtn,'ALL'],[fohBtn,'FOH'],[rohBtn,'ROH'],[subBtn,'SUB']].forEach(([b,v])=>{if(b&&!b.dataset.filterWired){b.dataset.filterWired='1';b.addEventListener('click',()=>setFilter(v,b))}})
 }
-function patchLoadAll(){if(window.__agendaFilterLoadPatched||typeof window.loadAll!=='function')return;const original=window.loadAll;window.loadAll=async function(...args){const out=await original.apply(this,args);setTimeout(applyAgendaFilter,250);setTimeout(applyAgendaFilter,800);return out};window.__agendaFilterLoadPatched=true}
-addEventListener('load',()=>{wire();patchLoadAll();setTimeout(applyAgendaFilter,900)});window.TeamDuckAgendaFilter={refresh:applyAgendaFilter};
+function patchLoadAll(){if(window.__agendaFilterLoadPatched||typeof window.loadAll!=='function')return;const original=window.loadAll;window.loadAll=async function(...args){const out=await original.apply(this,args);setTimeout(applyAgendaFilter,100);setTimeout(applyAgendaFilter,500);return out};window.__agendaFilterLoadPatched=true}
+addEventListener('load',()=>{wire();patchLoadAll();setTimeout(applyAgendaFilter,700)});
+window.TeamDuckAgendaFilter={refresh:applyAgendaFilter,current:()=>activeAgendaFilter};
 })();
