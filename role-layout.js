@@ -1,104 +1,32 @@
 (()=>{
-const q=id=>document.getElementById(id);
-const hide=el=>el&&el.classList.add('hidden');
-const show=el=>el&&el.classList.remove('hidden');
+const q=id=>document.getElementById(id),hide=el=>el&&el.classList.add('hidden'),show=el=>el&&el.classList.remove('hidden');
 const PREVIEW_KEY='team-duck-role-preview';
-function actualRole(){try{return typeof me!=='undefined'&&me?me.role:null}catch(_){return null}}
-function currentUserId(){try{return typeof me!=='undefined'&&me?String(me.id||''):''}catch(_){return ''}}
+function actualRole(){try{return me?.role||null}catch(_){return null}}
+function currentUserId(){try{return String(me?.id||'')}catch(_){return ''}}
 function previewRole(){if(actualRole()!=='admin')return null;const v=sessionStorage.getItem(PREVIEW_KEY);return ['partner','substitute'].includes(v)?v:null}
 function effectiveRole(){return previewRole()||actualRole()}
 function isPreview(){return actualRole()==='admin'&&!!previewRole()}
-function navButton(page,filter){return [...document.querySelectorAll('#nav button')].find(b=>b.dataset.page===page&&(filter?b.dataset.agendaFilter===filter:!b.dataset.agendaFilter));}
+function navButton(page,filter){return [...document.querySelectorAll('#nav button')].find(b=>b.dataset.page===page&&(filter?b.dataset.agendaFilter===filter:!b.dataset.agendaFilter))}
 function hideAdminOnly(){hide(q('team'));hide(navButton('team'));hide(q('newMember'));hide(q('inviteDialog'));hide(q('inviteLinkDialog'));hide(q('memberDialog'));document.querySelectorAll('[data-team-action],[data-member],[data-admin-only]').forEach(hide)}
-function addPreviewControl(){
- const wrap=q('rolePreviewControl');
- if(actualRole()!=='admin'){hide(wrap);return}
- if(!wrap)return;
- show(wrap);
- const sel=q('rolePreviewSelect');if(!sel)return;
- sel.value=previewRole()||'admin';
- if(!sel.dataset.wired){sel.dataset.wired='1';sel.onchange=()=>{const v=sel.value;if(v==='admin')sessionStorage.removeItem(PREVIEW_KEY);else sessionStorage.setItem(PREVIEW_KEY,v);location.reload()}}
- q('rolePreviewNotice')?.remove();
- if(isPreview()){
-   const tag=document.createElement('div');tag.id='rolePreviewNotice';tag.textContent=`Pré-visualização: ${previewRole()==='partner'?'Parceiro':'Substituto'} · dados dos Administradores estão ocultos`;
-   tag.style.cssText='position:sticky;top:0;z-index:50;background:#183321;color:#dff8df;border-bottom:1px solid #3f7b4e;padding:7px 12px;text-align:center;font-size:12px;font-weight:800';
-   q('app')?.prepend(tag)
- }
-}
+function addPreviewControl(){const wrap=q('rolePreviewControl');if(actualRole()!=='admin'){hide(wrap);return}if(!wrap)return;show(wrap);const sel=q('rolePreviewSelect');if(!sel)return;sel.value=previewRole()||'admin';if(!sel.dataset.wired){sel.dataset.wired='1';sel.onchange=()=>{const v=sel.value;if(v==='admin')sessionStorage.removeItem(PREVIEW_KEY);else sessionStorage.setItem(PREVIEW_KEY,v);location.reload()}}q('rolePreviewNotice')?.remove();if(isPreview()){const tag=document.createElement('div');tag.id='rolePreviewNotice';tag.textContent=`Pré-visualização: ${previewRole()==='partner'?'Parceiro':'Substituto'} · dados dos Administradores estão ocultos`;tag.style.cssText='position:sticky;top:0;z-index:50;background:#183321;color:#dff8df;border-bottom:1px solid #3f7b4e;padding:7px 12px;text-align:center;font-size:12px;font-weight:800';q('app')?.prepend(tag)}}
 function emptyHost(id,text){const el=q(id);if(el)el.innerHTML=`<div class="empty">${text}</div>`}
-function applySafePartnerPreview(){
- if(!isPreview()||previewRole()!=='partner')return false;
- emptyHost('concerts','Sem datas deste Parceiro.');
- emptyHost('closedConcerts','Sem trabalhos fechados deste Parceiro.');
- emptyHost('artistList','Sem artistas criados por este Parceiro.');
- emptyHost('nextWeekConcerts','Sem trabalhos deste Parceiro.');
- emptyHost('nextMonthConcerts','Sem trabalhos deste Parceiro.');
- emptyHost('nextConcerts','Sem trabalhos deste Parceiro.');
- if(q('statConcerts'))q('statConcerts').textContent='0';
- if(q('statArtists'))q('statArtists').textContent='0';
- if(q('statDue'))q('statDue').textContent='0,00 €';
- hide(q('dueByPerson'));
- document.querySelectorAll('[data-finance-split],.concert-meta,.money').forEach(el=>hide(el));
- return true
+function applyAdmin(){
+  show(navButton('dashboard'));show(navButton('agenda'));show(navButton('agenda','FOH'));show(navButton('agenda','ROH'));show(navButton('agenda','SUB'));show(navButton('closed'));show(navButton('artists'));show(navButton('team'));
+  show(q('newConcert'));show(q('newArtist'));show(q('newMember'));
+  document.querySelectorAll('#concerts > .item').forEach(card=>{card.dataset.memberHidden='0';card.dataset.filterHidden='0';card.style.display=''});
+  const general=navButton('agenda');if(general&&document.querySelector('#agenda:not(.hidden)'))general.classList.add('active');
+  q('agendaFilterEmpty')?.classList.add('hidden');
+  window.TeamDuckFinance?.refresh?.();window.TeamDuckDashboardWindows?.refresh?.();
 }
-function filterCardsForPartner(){
- if(isPreview()){applySafePartnerPreview();return}
- const uid=currentUserId();if(!uid)return;
- [...document.querySelectorAll('#concerts > .item')].forEach((card,i)=>{const c=(concerts||[])[i];const mine=!!c&&String(c.principal_technician_id||c.technician_id||c.owner_id||'')===uid;card.style.display=mine?'':'none'});
- [...document.querySelectorAll('#artistList > .item')].forEach((card,i)=>{const a=(artists||[])[i];const mine=!!a&&String(a.principal_technician_id||a.created_by||'')===uid;card.style.display=mine?'':'none'})
-}
-function filterCardsForSubstitute(){
- const host=q('concerts');if(!host)return;
- if(isPreview()){
-   emptyHost('concerts','Sem datas atribuídas a este Substituto.');
-   return;
- }
- const uid=currentUserId();if(!uid)return;
- [...host.querySelectorAll(':scope > .item')].forEach((card,i)=>{
-   const c=(concerts||[])[i];
-   const mine=!!c&&String(c.substitute_technician_id||'')===uid;
-   card.style.display=mine?'':'none';
- });
-}
-function applyPartner(){
- hideAdminOnly();show(navButton('dashboard'));show(navButton('agenda'));show(navButton('agenda','FOH'));show(navButton('agenda','ROH'));show(navButton('agenda','SUB'));show(navButton('closed'));show(navButton('artists'));show(q('newConcert'));show(q('newArtist'));
- const teamTitle=document.querySelector('#dashboard h3:last-of-type');if(teamTitle&&/Equipa/i.test(teamTitle.textContent||''))hide(teamTitle);
- hide(q('dueByPerson'));document.querySelectorAll('#memberDialog,#inviteDialog,#inviteLinkDialog').forEach(hide);filterCardsForPartner();
-}
-async function loadSubDirectory(){
- const host=q('artistList');if(!host)return;
- const dir=await sb.from('artist_directory').select('id,name').order('name');
- const rows=dir.data||[];
- if(isPreview()){
-   host.innerHTML=rows.map(a=>`<article class="item"><div><strong>${esc(a.name)}</strong><small>Acesso restrito</small></div><div class="file-actions"><span class="muted">🔒</span></div></article>`).join('')||'<div class="empty">Sem artistas.</div>';
-   return;
- }
- const con=await sb.from('concerts').select('artist_id,starts_at,ends_at,status,substitute_technician_id');
- const all=con.data||[],now=Date.now(),uid=currentUserId();
- const mine=all.filter(c=>String(c.substitute_technician_id||'')===uid);
- const allowed=new Set(mine.filter(c=>c.status!=='cancelled'&&new Date(c.ends_at||new Date(new Date(c.starts_at).getTime()+12*3600000)).getTime()>=now).map(c=>String(c.artist_id)));
- host.innerHTML=rows.map(a=>`<article class="item"><div><strong>${esc(a.name)}</strong><small>${allowed.has(String(a.id))?'Ficheiros disponíveis para a tua data':'Acesso restrito'}</small></div><div class="file-actions">${allowed.has(String(a.id))?`<button type="button" class="secondary tiny" data-sub-files="${a.id}" data-sub-name="${esc(a.name)}">Ficheiros</button>`:'<span class="muted">🔒</span>'}</div></article>`).join('')||'<div class="empty">Sem artistas.</div>';
- document.querySelectorAll('[data-sub-files]').forEach(b=>b.onclick=async()=>{
-   currentArtist={id:b.dataset.subFiles,name:b.dataset.subName};
-   q('artistFilesTitle').textContent='Ficheiros · '+b.dataset.subName;
-   q('artistFilesDialog').showModal();
-   await loadArtistFiles();
-   lockSubFileDialog();
- });
-}
+function applySafePartnerPreview(){if(!isPreview()||previewRole()!=='partner')return false;['concerts','closedConcerts','artistList','nextWeekConcerts','nextMonthConcerts','nextConcerts'].forEach((id)=>emptyHost(id,id==='artistList'?'Sem artistas criados por este Parceiro.':'Sem dados deste Parceiro.'));if(q('statConcerts'))q('statConcerts').textContent='0';if(q('statArtists'))q('statArtists').textContent='0';if(q('statDue'))q('statDue').textContent='—';document.querySelectorAll('.money,[data-finance-split],.concert-meta').forEach(hide);return true}
+function filterCardsForPartner(){if(isPreview()){applySafePartnerPreview();return}const uid=currentUserId();if(!uid)return;[...document.querySelectorAll('#concerts > .item')].forEach((card,i)=>{const c=(concerts||[])[i],mine=!!c&&String(c.principal_technician_id||c.owner_id||'')===uid;card.style.display=mine?'':'none'});[...document.querySelectorAll('#artistList > .item')].forEach((card,i)=>{const a=(artists||[])[i],mine=!!a&&String(a.principal_technician_id||a.created_by||'')===uid;card.style.display=mine?'':'none'})}
+function applyPartner(){hideAdminOnly();show(navButton('dashboard'));show(navButton('agenda'));show(navButton('agenda','FOH'));show(navButton('agenda','ROH'));show(navButton('agenda','SUB'));show(navButton('closed'));show(navButton('artists'));show(q('newConcert'));show(q('newArtist'));document.querySelectorAll('#artistList .money,#concerts > .item > .money,#nextWeekConcerts .money,#nextMonthConcerts .money').forEach(hide);filterCardsForPartner();setTimeout(()=>{document.querySelectorAll('#artistList .money,#concerts > .item > .money').forEach(hide);window.TeamDuckFinance?.refresh?.();window.TeamDuckDashboardWindows?.refresh?.()},100)}
+function filterCardsForSubstitute(){const host=q('concerts');if(!host)return;if(isPreview()){emptyHost('concerts','Sem datas atribuídas a este Substituto.');return}const uid=currentUserId();[...host.querySelectorAll(':scope > .item')].forEach((card,i)=>{const c=(concerts||[])[i],mine=!!c&&String(c.substitute_technician_id||'')===uid;card.style.display=mine?'':'none'})}
+async function loadSubDirectory(){const host=q('artistList');if(!host)return;const dir=await sb.from('artist_directory').select('id,name').order('name'),rows=dir.data||[];if(isPreview()){host.innerHTML=rows.map(a=>`<article class="item"><div><strong>${esc(a.name)}</strong><small>Acesso restrito</small></div><span>🔒</span></article>`).join('');return}const con=await sb.from('concerts').select('artist_id,starts_at,ends_at,status,substitute_technician_id'),uid=currentUserId(),now=Date.now(),allowed=new Set((con.data||[]).filter(c=>String(c.substitute_technician_id||'')===uid&&c.status!=='cancelled'&&new Date(c.ends_at||new Date(new Date(c.starts_at).getTime()+12*3600000)).getTime()>=now).map(c=>String(c.artist_id)));host.innerHTML=rows.map(a=>`<article class="item"><div><strong>${esc(a.name)}</strong><small>${allowed.has(String(a.id))?'Ficheiros disponíveis para a tua data':'Acesso restrito'}</small></div><div>${allowed.has(String(a.id))?`<button type="button" class="secondary tiny" data-sub-files="${a.id}" data-sub-name="${esc(a.name)}">Ficheiros</button>`:'🔒'}</div></article>`).join('');document.querySelectorAll('[data-sub-files]').forEach(b=>b.onclick=async()=>{currentArtist={id:b.dataset.subFiles,name:b.dataset.subName};q('artistFilesTitle').textContent='Ficheiros · '+b.dataset.subName;q('artistFilesDialog').showModal();await loadArtistFiles();lockSubFileDialog()})}
 function lockSubFileDialog(){const d=q('artistFilesDialog');if(!d)return;d.querySelectorAll('.file-input,#artistFileCategory,#uploadProgress,[data-deletefile]').forEach(el=>hide(el.closest('label')||el));const n=d.querySelector('.notice');if(n)n.textContent='Acesso apenas aos ficheiros necessários para as tuas datas atribuídas.'}
-function applySubstitute(){
- hideAdminOnly();hide(navButton('dashboard'));hide(navButton('closed'));hide(navButton('team'));hide(navButton('agenda','FOH'));hide(navButton('agenda','ROH'));hide(navButton('agenda','SUB'));
- show(navButton('agenda'));show(navButton('artists'));
- hide(q('newConcert'));hide(q('newArtist'));hide(q('newMember'));hide(q('dashboard'));hide(q('closed'));hide(q('team'));
- document.querySelectorAll('.money,#dueByPerson,.stats,[data-finance-split],#concertDialog,#artistDialog').forEach(hide);
- const title=document.querySelector('#artists .title-row h2');if(title)title.textContent='Ficheiros dos artistas';
- const artistNav=navButton('artists');if(artistNav)artistNav.textContent='Ficheiros';
- filterCardsForSubstitute();loadSubDirectory();lockSubFileDialog();
-}
-function applyRoleLayout(){const role=effectiveRole();addPreviewControl();if(!role)return false;document.body.dataset.teamDuckRole=role;document.body.dataset.actualRole=actualRole()||'';if(role==='partner')applyPartner();else if(role==='substitute')applySubstitute();return true}
-function patchLoadAll(){if(window.__roleLayoutPatched||typeof loadAll!=='function')return;const original=loadAll;window.loadAll=async function(...args){const out=await original.apply(this,args);setTimeout(applyRoleLayout,0);setTimeout(applyRoleLayout,250);return out};window.__roleLayoutPatched=true}
-function init(){patchLoadAll();let n=0;const tick=()=>{n++;patchLoadAll();const done=applyRoleLayout();if(!done&&n<40)setTimeout(tick,200)};tick();q('artistFilesDialog')?.addEventListener('toggle',()=>{if(effectiveRole()==='substitute')lockSubFileDialog()})}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.TeamDuckRoleLayout={apply:applyRoleLayout,effectiveRole,clearPreview:()=>{sessionStorage.removeItem(PREVIEW_KEY);location.reload()}};
+function applySubstitute(){hideAdminOnly();hide(navButton('dashboard'));hide(navButton('closed'));hide(navButton('team'));hide(navButton('agenda','FOH'));hide(navButton('agenda','ROH'));hide(navButton('agenda','SUB'));show(navButton('agenda'));show(navButton('artists'));hide(q('newConcert'));hide(q('newArtist'));hide(q('newMember'));hide(q('dashboard'));hide(q('closed'));hide(q('team'));document.querySelectorAll('.money,#dueByPerson,.stats,[data-finance-split],#concertDialog,#artistDialog').forEach(hide);const title=document.querySelector('#artists .title-row h2');if(title)title.textContent='Ficheiros dos artistas';const artistNav=navButton('artists');if(artistNav)artistNav.textContent='Ficheiros';filterCardsForSubstitute();loadSubDirectory();lockSubFileDialog()}
+function applyRoleLayout(){const role=effectiveRole();addPreviewControl();if(!role)return false;document.body.dataset.teamDuckRole=role;document.body.dataset.actualRole=actualRole()||'';if(role==='admin')applyAdmin();else if(role==='partner')applyPartner();else if(role==='substitute')applySubstitute();return true}
+function patchLoadAll(){if(window.__roleLayoutPatched||typeof loadAll!=='function')return;const original=loadAll;window.loadAll=async function(...args){const out=await original.apply(this,args);setTimeout(applyRoleLayout,0);setTimeout(applyRoleLayout,300);return out};window.__roleLayoutPatched=true}
+function init(){patchLoadAll();let n=0;const tick=()=>{n++;patchLoadAll();const done=applyRoleLayout();if(!done&&n<40)setTimeout(tick,200)};tick()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();window.TeamDuckRoleLayout={apply:applyRoleLayout,effectiveRole,clearPreview:()=>{sessionStorage.removeItem(PREVIEW_KEY);location.reload()}};
 })();
