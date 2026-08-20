@@ -1,35 +1,10 @@
 (()=>{
-const DUCK_ICON='401FB0DA-DAD2-49CE-89E0-A9850A0722F7.png?v=20260820-icon4';
-function applyTeamDuckBackground(){
-  const chunks=window.__teamDuckBg;
-  if(!chunks||chunks.length!==10)return;
-  try{
-    const raw=atob(chunks.join(''));
-    const bytes=new Uint8Array(raw.length);
-    for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
-    const url=URL.createObjectURL(new Blob([bytes],{type:'image/webp'}));
-    const mobile=window.matchMedia('(max-width:600px)').matches;
-    const app=document.getElementById('app');
-    if(app){app.style.backgroundImage=`linear-gradient(rgba(3,10,5,.58),rgba(3,10,5,.78)),url("${url}")`;app.style.backgroundSize='cover';app.style.backgroundPosition='center top';app.style.backgroundRepeat='no-repeat';app.style.backgroundAttachment=mobile?'scroll':'fixed';app.style.minHeight='100vh'}
-    ['login','inviteScreen'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.style.backgroundImage=`linear-gradient(rgba(3,10,5,.38),rgba(3,10,5,.62)),url("${url}")`;el.style.backgroundSize='cover';el.style.backgroundPosition='center';el.style.backgroundRepeat='no-repeat';el.style.backgroundAttachment=mobile?'scroll':'fixed'});
-    window.__teamDuckBackgroundUrl=url;
-  }catch(err){console.warn('Team Duck background could not be applied',err)}
-}
-function refreshInstallMetadata(){
-  document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(l=>l.href=DUCK_ICON);
-  let apple=document.querySelector('link[rel="apple-touch-icon"]');if(!apple){apple=document.createElement('link');apple.rel='apple-touch-icon';document.head.appendChild(apple)}apple.href=DUCK_ICON;apple.setAttribute('sizes','1024x1024');
-  let pre=document.querySelector('link[rel="apple-touch-icon-precomposed"]');if(!pre){pre=document.createElement('link');pre.rel='apple-touch-icon-precomposed';document.head.appendChild(pre)}pre.href=DUCK_ICON;
-  const manifest=document.querySelector('link[rel="manifest"]');if(manifest)manifest.href='manifest.webmanifest?v=20260820-icon4';
-}
-function ensureRolePreviewControl(){
-  if(document.getElementById('rolePreviewControl'))return;
-  const header=document.querySelector('#app > header');if(!header)return;
-  const wrap=document.createElement('div');wrap.id='rolePreviewControl';wrap.className='hidden';wrap.style.cssText='display:flex;align-items:center;gap:7px;margin-left:auto;margin-right:8px';
-  wrap.innerHTML='<span style="font-size:13px;font-weight:800;white-space:nowrap">👁 Vista</span><select id="rolePreviewSelect" aria-label="Pré-visualizar aplicação por perfil" style="max-width:150px"><option value="admin">Administrador</option><option value="partner">Parceiro</option><option value="substitute">Substituto</option></select>';
-  const logout=document.getElementById('logout');header.insertBefore(wrap,logout||null);
-}
+const DUCK_ICON='/401FB0DA-DAD2-49CE-89E0-A9850A0722F7.png?v=20260820-macduck1';
+function applyTeamDuckBackground(){const chunks=window.__teamDuckBg;if(!chunks||chunks.length!==10)return;try{const raw=atob(chunks.join('')),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);const url=URL.createObjectURL(new Blob([bytes],{type:'image/webp'})),mobile=window.matchMedia('(max-width:600px)').matches,app=document.getElementById('app');if(app){app.style.backgroundImage=`linear-gradient(rgba(3,10,5,.58),rgba(3,10,5,.78)),url("${url}")`;app.style.backgroundSize='cover';app.style.backgroundPosition='center top';app.style.backgroundRepeat='no-repeat';app.style.backgroundAttachment=mobile?'scroll':'fixed';app.style.minHeight='100vh'}['login','inviteScreen'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.style.backgroundImage=`linear-gradient(rgba(3,10,5,.38),rgba(3,10,5,.62)),url("${url}")`;el.style.backgroundSize='cover';el.style.backgroundPosition='center';el.style.backgroundRepeat='no-repeat';el.style.backgroundAttachment=mobile?'scroll':'fixed'});window.__teamDuckBackgroundUrl=url}catch(err){console.warn('Team Duck background could not be applied',err)}}
+function refreshInstallMetadata(){document.querySelectorAll('link[rel="icon"],link[rel="shortcut icon"],link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(l=>l.href=DUCK_ICON);const manifest=document.querySelector('link[rel="manifest"]');if(manifest)manifest.href='/manifest.webmanifest?v=20260820-macduck1'}
+function ensureRolePreviewControl(){if(document.getElementById('rolePreviewControl'))return;const header=document.querySelector('#app > header');if(!header)return;const wrap=document.createElement('div');wrap.id='rolePreviewControl';wrap.className='hidden';wrap.style.cssText='display:flex;align-items:center;gap:7px;margin-left:auto;margin-right:8px';wrap.innerHTML='<span style="font-size:13px;font-weight:800;white-space:nowrap">👁 Vista</span><select id="rolePreviewSelect" aria-label="Pré-visualizar aplicação por perfil" style="max-width:150px"><option value="admin">Administrador</option><option value="partner">Parceiro</option><option value="substitute">Substituto</option></select>';const logout=document.getElementById('logout');header.insertBefore(wrap,logout||null)}
 function loadStyle(src,key){if(document.querySelector(`link[data-team-duck-style="${key}"]`))return;const l=document.createElement('link');l.rel='stylesheet';l.href=src;l.dataset.teamDuckStyle=key;document.head.appendChild(l)}
 function loadScript(src,key,onload){if(document.querySelector(`script[data-team-duck-extra="${key}"]`)){onload?.();return}const s=document.createElement('script');s.src=src;s.dataset.teamDuckExtra=key;if(onload)s.onload=onload;document.body.appendChild(s)}
-function boot(){refreshInstallMetadata();ensureRolePreviewControl();applyTeamDuckBackground();loadStyle('premium-ui.css?v=20260819-premium1','premium-ui');loadScript('dual-assignments.js?v=20260820-single-tech2','dual-assignments',()=>{setTimeout(()=>window.TeamDuckAssignments?.refresh?.(),50)});loadScript('finance-summary.js?v=20260819-final1','finance-summary',()=>{setTimeout(()=>window.TeamDuckFinance?.refresh?.(),50)});loadScript('role-layout.js?v=20260820-role5-sublock','role-layout',()=>{setTimeout(()=>window.TeamDuckRoleLayout?.apply?.(),50);setTimeout(()=>window.TeamDuckRoleLayout?.apply?.(),500)});loadScript('partner-scope.js?v=20260820-partner1','partner-scope',()=>{setTimeout(()=>window.TeamDuckPartnerScope?.refresh?.(),150)});loadScript('profile-images.js?v=20260820-images2','profile-images',()=>{setTimeout(()=>window.TeamDuckImages?.enhance?.(),120)});}
+function boot(){refreshInstallMetadata();ensureRolePreviewControl();applyTeamDuckBackground();loadStyle('premium-ui.css?v=20260819-premium1','premium-ui');loadScript('dual-assignments.js?v=20260820-single-tech2','dual-assignments',()=>setTimeout(()=>window.TeamDuckAssignments?.refresh?.(),50));loadScript('finance-summary.js?v=20260820-scoped2','finance-summary',()=>setTimeout(()=>window.TeamDuckFinance?.refresh?.(),50));loadScript('role-layout.js?v=20260820-role6-adminreset','role-layout',()=>{setTimeout(()=>window.TeamDuckRoleLayout?.apply?.(),50);setTimeout(()=>window.TeamDuckRoleLayout?.apply?.(),500)});loadScript('partner-scope.js?v=20260820-partner1','partner-scope',()=>setTimeout(()=>window.TeamDuckPartnerScope?.refresh?.(),150));loadScript('profile-images.js?v=20260820-images2','profile-images',()=>setTimeout(()=>window.TeamDuckImages?.enhance?.(),120))}
 if(document.readyState==='loading')addEventListener('load',boot,{once:true});else boot();
 })();
