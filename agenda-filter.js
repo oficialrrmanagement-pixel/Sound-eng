@@ -5,11 +5,11 @@ function assigned(c){try{return window.TeamDuckAssignments?.byConcert?.(c.id)||[
 function techFor(id){return (team||[]).find(x=>String(x.id)===String(id))||null}
 function matches(c){
  if(c?.closed)return false;
- const list=assigned(c);
+ const list=assigned(c),pos=String(c?.work_position||'').toUpperCase();
  if(activeAgendaFilter==='ALL')return true;
- if(activeAgendaFilter==='FOH')return list.length?list.some(a=>a.position==='FOH'):String(c?.work_position||'').toUpperCase()==='FOH';
- if(activeAgendaFilter==='ROH')return list.length?list.some(a=>a.position==='ROH'):String(c?.work_position||'').toUpperCase()==='ROH';
- if(activeAgendaFilter==='SUB')return list.length?list.some(a=>techFor(a.technician_id)?.role==='substitute'):techFor(c.technician_id)?.role==='substitute';
+ if(activeAgendaFilter==='FOH')return pos==='FOH'||list.some(a=>String(a.position||'').toUpperCase()==='FOH');
+ if(activeAgendaFilter==='ROH')return pos==='ROH'||list.some(a=>String(a.position||'').toUpperCase()==='ROH');
+ if(activeAgendaFilter==='SUB')return !!c?.substitute_technician_id||list.some(a=>techFor(a.technician_id)?.role==='substitute')||techFor(c?.technician_id)?.role==='substitute';
  return true;
 }
 function applyAgendaFilter(){
@@ -24,7 +24,7 @@ function applyAgendaFilter(){
  const title=document.querySelector('#agenda .title-row h2');
  if(title)title.textContent=activeAgendaFilter==='ALL'?'Agenda':activeAgendaFilter==='SUB'?'Agenda · Substitutos':`Agenda · ${activeAgendaFilter}`;
 }
-function setFilter(value,button){activeAgendaFilter=value;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b===button));setTimeout(applyAgendaFilter,120)}
+function setFilter(value,button){activeAgendaFilter=value;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b===button));setTimeout(applyAgendaFilter,120);setTimeout(applyAgendaFilter,500)}
 function wire(){
  const agendaBtn=document.querySelector('#nav button[data-page="agenda"]:not([data-agenda-filter])');
  const fohBtn=document.querySelector('#nav button[data-agenda-filter="FOH"]');
@@ -32,6 +32,6 @@ function wire(){
  const subBtn=document.querySelector('#nav button[data-agenda-filter="SUB"]');
  [[agendaBtn,'ALL'],[fohBtn,'FOH'],[rohBtn,'ROH'],[subBtn,'SUB']].forEach(([b,v])=>{if(b&&!b.dataset.filterWired){b.dataset.filterWired='1';b.addEventListener('click',()=>setFilter(v,b))}})
 }
-function patchLoadAll(){if(window.__agendaFilterLoadPatched||typeof window.loadAll!=='function')return;const original=window.loadAll;window.loadAll=async function(...args){const out=await original.apply(this,args);setTimeout(applyAgendaFilter,250);return out};window.__agendaFilterLoadPatched=true}
+function patchLoadAll(){if(window.__agendaFilterLoadPatched||typeof window.loadAll!=='function')return;const original=window.loadAll;window.loadAll=async function(...args){const out=await original.apply(this,args);setTimeout(applyAgendaFilter,250);setTimeout(applyAgendaFilter,800);return out};window.__agendaFilterLoadPatched=true}
 addEventListener('load',()=>{wire();patchLoadAll();setTimeout(applyAgendaFilter,900)});window.TeamDuckAgendaFilter={refresh:applyAgendaFilter};
 })();
