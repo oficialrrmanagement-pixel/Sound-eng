@@ -6,10 +6,20 @@ async function loadPartnerPicker(){
  const r=await sb.rpc('partner_team_picker');
  if(r.error){console.warn('partner_team_picker',r.error);return}
  const own=(team||[]).filter(p=>String(p.id)===String(me?.id||''));
- const safe=(r.data||[]).map(p=>({id:p.id,full_name:p.full_name,role:p.role,active:p.active}));
+ const safe=(r.data||[]).map(p=>({
+   id:p.id,
+   full_name:p.full_name,
+   role:p.role,
+   active:p.active,
+   photo_path:p.photo_path||null,
+   base_city:p.base_city||null,
+   owner_partner_id:p.owner_partner_id||null
+ }));
  const map=new Map([...own,...safe].map(p=>[String(p.id),p]));
  team=[...map.values()];
- setTimeout(()=>window.TeamDuckAssignments?.refresh?.(),20)
+ setTimeout(()=>window.TeamDuckAssignments?.refresh?.(),20);
+ setTimeout(()=>window.TeamDuckImages?.enhance?.(),30);
+ setTimeout(()=>window.TeamDuckAgendaMembers?.refresh?.(),40);
 }
 function patchPartnerArtistCreate(){
  const form=q('artistForm');if(!form||form.dataset.partnerScopePatched)return;
