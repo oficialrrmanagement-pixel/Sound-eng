@@ -10,9 +10,10 @@ function renderDueByPerson(){
  if(!isAdmin){host.innerHTML='';host.classList.add('hidden');if(sectionTitle)sectionTitle.classList.add('hidden');return}
  host.classList.remove('hidden');if(sectionTitle)sectionTitle.classList.remove('hidden');
  const people=(team||[]).filter(p=>p.active!==false);
- host.innerHTML=people.map(p=>`<article class="item"><div><strong>${esc(p.full_name||p.email||'Membro')}</strong><small>${roleLabel(p.role)}</small></div><span class="money">${money(dueFor(p))}</span></article>`).join('')||'<div class="empty">Sem membros na equipa.</div>'
+ host.innerHTML=people.map(p=>`<article class="item" data-due-person="${p.id}"><div><strong>${esc(p.full_name||p.email||'Membro')}</strong><small>${roleLabel(p.role)}</small></div><span class="money">${money(dueFor(p))}</span></article>`).join('')||'<div class="empty">Sem membros na equipa.</div>'
 }
 function refresh(){const total=q('statDue');if(total)total.closest('article')?.classList.add('hidden');renderDueByPerson()}
 function patchLoadAll(){if(window.__duePeoplePatched||typeof window.loadAll!=='function')return false;const original=window.loadAll;window.loadAll=async function(...args){const out=await original.apply(this,args);setTimeout(refresh,0);return out};window.__duePeoplePatched=true;return true}
 addEventListener('load',()=>{let tries=0;const timer=setInterval(()=>{tries++;patchLoadAll();refresh();if(me||tries>20)clearInterval(timer)},250)});
+window.TeamDuckDue={refresh};
 })();
