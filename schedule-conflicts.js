@@ -1,11 +1,13 @@
 (()=>{
 const DAY_KEY=d=>{const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
 let refreshTimer=null;
-function technicianId(c){return String(c?.substitute_technician_id||c?.principal_technician_id||c?.technician_id||c?.owner_id||'')}
+function technicianId(c){return String(c?.substitute_technician_id||c?.technician_id||c?.principal_technician_id||'')}
 function createdKey(c){return String(c?.created_at||c?.starts_at||'')+'|'+String(c?.id||'')}
 function daysUntil(c){const now=new Date(),d=new Date(c?.starts_at||0);const a=new Date(now.getFullYear(),now.getMonth(),now.getDate()),b=new Date(d.getFullYear(),d.getMonth(),d.getDate());return Math.ceil((b-a)/86400000)}
 function urgency(c){const days=daysUntil(c);if(days>=0&&days<=15)return'red-blink';if(days>=0&&days<=30)return'yellow-blink';return'yellow'}
-function build(rows){const groups=new Map();for(const c of rows||[]){if(c?.closed||c?.status==='cancelled')continue;const tech=technicianId(c);if(!tech)continue;const key=tech+'|'+DAY_KEY(c.starts_at);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(c)}const out=new Map();for(const group of groups.values()){if(group.length<2)continue;group.sort((a,b)=>createdKey(a).localeCompare(createdKey(b)));group.forEach((c,i)=>out.set(String(c.id),{conflict:true,label:`1.${i+1}`,count:group.length,technician_id:technicianId(c),urgency:urgency(c),days_until:daysUntil(c)}))}return out}
+function range(c){const s=new Date(c?.starts_at||0);let e=c?.ends_at?new Date(c.ends_at):null;if(Number.isNaN(s.getTime()))return null;if(!e||Number.isNaN(e.getTime())||e<=s)e=new Date(s.getTime()+1);return [s.getTime(),e.getTime()]}
+function overlaps(a,b){const ra=range(a),rb=range(b);if(!ra||!rb)return false;return ra[0]<rb[1]&&rb[0]<ra[1]}
+function build(rows){const byTech=new Map();for(const c of rows||[]){if(c?.closed||c?.status==='cancelled'||c?.booking_status==='cancelled')continue;const tech=technicianId(c);if(!tech)continue;if(!byTech.has(tech))byTech.set(tech,[]);byTech.get(tech).push(c)}const out=new Map();for(const [tech,items] of byTech){const conflictIds=new Set();for(let i=0;i<items.length;i++){for(let j=i+1;j<items.length;j++){if(overlaps(items[i],items[j])){conflictIds.add(String(items[i].id));conflictIds.add(String(items[j].id))}}}if(conflictIds.size<2)continue;const group=items.filter(c=>conflictIds.has(String(c.id))).sort((a,b)=>createdKey(a).localeCompare(createdKey(b)));group.forEach((c,i)=>out.set(String(c.id),{conflict:true,label:`1.${i+1}`,count:group.length,technician_id:tech,urgency:urgency(c),days_until:daysUntil(c)}))}return out}
 function info(c){return currentMap().get(String(c?.id||''))||null}
 function currentMap(){try{return build(concerts||[])}catch(_){return new Map()}}
 function stateFor(c){if(c?.closed)return'closed';if(info(c))return'conflict';const end=new Date(c?.ends_at||c?.starts_at||0);return end<new Date()?'past':'future'}
