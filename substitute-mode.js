@@ -25,7 +25,7 @@ function renderSubstituteArtists(){
 function lockFilesReadOnly(){
   if(!isSubstitute())return;
   q('artistEditDialog')?.close?.();
-  document.querySelectorAll('[data-artist-edit],.td-photo-btn,#newArtist').forEach(el=>el.remove?.()||el.classList.add('hidden'));
+  document.querySelectorAll('[data-artist-edit],#artistList .td-photo-btn,#artistEditDialog .td-photo-btn,#newArtist').forEach(el=>el.remove?.()||el.classList.add('hidden'));
   const dialog=q('artistFilesDialog');if(!dialog)return;
   dialog.querySelectorAll('.file-input,#artistFileCategory,#uploadProgress,[data-deletefile]').forEach(el=>{const target=el.closest('label')||el;target.classList.add('hidden')});
   const notice=dialog.querySelector('.notice');if(notice)notice.textContent='Acesso apenas para consulta dos ficheiros necessários à tua data atribuída.';
