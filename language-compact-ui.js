@@ -8,6 +8,18 @@ const st=document.createElement('style');st.textContent=`
 .td-lang-menu{position:absolute!important;top:44px!important;right:0!important;width:52px!important;padding:5px!important;border:1px solid rgba(255,255,255,.14)!important;border-radius:14px!important;background:rgba(7,16,11,.96)!important;box-shadow:0 12px 30px rgba(0,0,0,.35)!important;backdrop-filter:blur(14px)!important}
 .td-lang-menu[hidden]{display:none!important}.td-lang-menu button{display:block!important;width:100%!important;min-width:0!important;margin:0!important;padding:8px 4px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:#b6bdb8!important;font-size:11px!important;font-weight:900!important;box-shadow:none!important}.td-lang-menu button.active{color:#d8ff3e!important;background:rgba(216,255,62,.08)!important}
 .td-language-login{position:absolute!important;top:12px!important;right:12px!important;margin:0!important}
-@media(max-width:600px){#app>header .td-language{width:34px!important;height:34px!important;min-width:34px!important;flex-basis:34px!important;margin-right:5px!important}.td-lang-menu{top:40px!important}.td-lang-current{font-size:10px!important}}
+@media(max-width:600px){
+#app>header{display:flex!important;align-items:center!important;flex-wrap:nowrap!important;gap:5px!important;padding-left:10px!important;padding-right:10px!important}
+#app>header .brand{flex:1 1 auto!important;min-width:0!important;margin:0!important;overflow:hidden!important}
+#app>header .brand img{flex:0 0 auto!important}
+#app>header .brand span{min-width:0!important;overflow:hidden!important}
+#app>header .brand strong,#app>header .brand small{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+#app>header .td-language{width:32px!important;height:32px!important;min-width:32px!important;flex:0 0 32px!important;margin:0!important}
+#app>header #rolePreviewControl{flex:0 0 auto!important;margin:0!important;padding:0!important;min-width:0!important}
+#app>header #rolePreviewSelect{width:105px!important;max-width:105px!important;min-width:0!important;height:38px!important;padding:6px 8px!important;font-size:11px!important;font-weight:800!important;border-radius:15px!important}
+#app>header #logout{flex:0 0 auto!important;width:auto!important;min-width:48px!important;height:38px!important;margin:0!important;padding:6px 10px!important;font-size:11px!important;line-height:1!important;border-radius:15px!important}
+.td-lang-menu{top:38px!important}.td-lang-current{font-size:10px!important}
+}
+@media(max-width:390px){#app>header #rolePreviewSelect{width:92px!important;max-width:92px!important}#app>header #logout{min-width:44px!important;padding-left:8px!important;padding-right:8px!important}}
 `;document.head.appendChild(st);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();window.TeamDuckLanguageCompact={refresh};
 })();
