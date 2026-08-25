@@ -1,0 +1,6 @@
+(()=>{
+function say(msg){try{if(typeof toast==='function')toast(msg);else alert(msg)}catch(_){alert(msg)}}
+function getConcertFromButton(btn){const host=document.getElementById('concerts'),card=btn.closest('.item');if(!host||!card)return null;const cards=[...host.querySelectorAll(':scope > .item')],i=cards.indexOf(card);try{return (concerts||[])[i]||null}catch(_){return null}}
+async function removeSubstitute(c){if(!c?.id)return say('Não foi possível identificar esta data.');if(!c.substitute_technician_id)return say('Esta data já está sem substituto.');if(!confirm('Retirar o substituto desta data?'))return;const r=await sb.from('concerts').update({substitute_technician_id:null,substitute_fee:0}).eq('id',c.id);if(r.error)return say(r.error.message);try{if(typeof loadAll==='function')await loadAll()}catch(_){}try{await window.TeamDuckWhatsApp?.refresh?.()}catch(_){}say('Substituto retirado. A data ficou sem substituto.')}
+document.addEventListener('click',e=>{const btn=e.target?.closest?.('[data-whatsapp-action="remove-sub"]');if(!btn)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();const c=getConcertFromButton(btn);removeSubstitute(c)},true);
+})();
