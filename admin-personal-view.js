@@ -7,7 +7,7 @@ function selectedId(){return sessionStorage.getItem(KEY)||''}
 function selectedAdmin(){const id=selectedId();return id?admins().find(p=>String(p.id)===String(id))||null:null}
 function isDemo(){return sessionStorage.getItem(DEMO)==='1'}
 function ownsConcert(c,id){return [c?.principal_technician_id,c?.technician_id,c?.owner_id,c?.created_by].some(v=>String(v||'')===String(id))}
-function ownsArtist(a,id,cs){return [a?.principal_technician_id,a?.owner_id,a?.created_by].some(v=>String(v||'')===String(id))||cs.some(c=>String(c?.artist_id||'')===String(a?.id||''))}
+function ownsArtist(a,id,cs){return [a?.principal_technician_id,a?.secondary_technician_id,a?.owner_id,a?.created_by].some(v=>String(v||'')===String(id))||cs.some(c=>String(c?.artist_id||'')===String(a?.id||''))}
 function capture(){try{master={artists:[...(artists||[])],concerts:[...(concerts||[])],team:[...(team||[])]}}catch(_){}}
 function restore(){if(!master)return;artists=[...master.artists];concerts=[...master.concerts];team=[...master.team]}
 function scopeData(admin){restore();if(!admin)return;const id=String(admin.id),cs=master.concerts.filter(c=>ownsConcert(c,id)),as=master.artists.filter(a=>ownsArtist(a,id,cs)),ids=new Set([id]);master.team.forEach(p=>{if(String(p?.owner_partner_id||'')===id)ids.add(String(p.id))});cs.forEach(c=>[c?.substitute_technician_id,c?.technician_id,c?.principal_technician_id].forEach(v=>v&&ids.add(String(v))));concerts=cs;artists=as;team=master.team.filter(p=>ids.has(String(p.id)))}
