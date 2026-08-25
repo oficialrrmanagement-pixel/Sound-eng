@@ -1,6 +1,6 @@
 (()=>{
 const q=id=>document.getElementById(id);
-const STATUS={confirmed:'Confirmirmado',reserved:'Reservado',cancelled:'Cancelado'};
+const STATUS={confirmed:'Confirmado',reserved:'Reservado',cancelled:'Cancelado'};
 let cacheConcerts=[],cacheProfiles=[],decorating=false,knownSubs=new Map(),baselineReady=false,armedUntil=0,polling=false,lastAutoKey='';
 function normalizePhone(raw){let d=String(raw||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.length===9)d='351'+d;return d}
 function dateParts(c){const d=new Date(c.starts_at);return {date:d.toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}),time:d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}}
